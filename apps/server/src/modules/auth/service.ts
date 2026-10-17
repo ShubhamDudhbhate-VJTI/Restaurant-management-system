@@ -52,7 +52,7 @@ export const authService = {
       name: user.name,
       email: user.email,
       role: user.role as Role,
-      createdAt: user.createdAt
+      createdAt: user.createdAt.getTime()
     };
   },
 

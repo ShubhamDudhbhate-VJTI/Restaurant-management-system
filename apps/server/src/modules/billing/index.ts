@@ -7,8 +7,7 @@ import { OrderStatus, type Bill } from '@/contracts';
 export async function computeBill(sessionId: string, discountPercent = 0): Promise<Bill> {
   const sessionOrders = await db.select()
     .from(orders)
-    .where(eq(orders.sessionId, sessionId))
-    .all();
+    .where(eq(orders.sessionId, sessionId));
 
   const validOrders = sessionOrders.filter(o => o.status !== OrderStatus.CANCELLED);
   
@@ -18,8 +17,7 @@ export async function computeBill(sessionId: string, discountPercent = 0): Promi
     const validOrderIds = validOrders.map(o => o.id);
     const items = await db.select()
       .from(orderItems)
-      .where(inArray(orderItems.orderId, validOrderIds))
-      .all();
+      .where(inArray(orderItems.orderId, validOrderIds));
       
     for (const item of items) {
       subtotalCents += item.priceCents * item.quantity;

@@ -1,11 +1,11 @@
 import { db } from '../../db/client';
 import { tables } from '../../db/schema';
 import { eq } from 'drizzle-orm';
-import { CreateTableInput, UpdateTableInput } from '@/contracts';
+import { CreateTableInput, UpdateTableInput, TableStatus } from '@/contracts';
 
 export const tableRepository = {
   async findAll() {
-    return await db.select().from(tables).all();
+    return await db.select().from(tables);
   },
 
   async findById(id: string) {
@@ -29,6 +29,14 @@ export const tableRepository = {
   async update(id: string, data: UpdateTableInput) {
     const [table] = await db.update(tables)
       .set(data)
+      .where(eq(tables.id, id))
+      .returning();
+    return table;
+  },
+
+  async updateStatus(id: string, status: TableStatus) {
+    const [table] = await db.update(tables)
+      .set({ status })
       .where(eq(tables.id, id))
       .returning();
     return table;

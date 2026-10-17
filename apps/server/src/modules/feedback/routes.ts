@@ -1,33 +1,29 @@
 import { Router } from 'express';
 import { authenticate, requireRole } from '../../middleware/auth';
-import { AppError } from '../../middleware/error';
-import { CreateFeedbackSchema, Role, SessionStatus } from '@/contracts';
-import { feedbackRepository } from './repository';
-import { sessionRepository } from '../sessions/repository';
+import { Role, CreateFeedbackSchema } from '@/contracts';
+import { feedbackService } from './service';
 
 export const feedbackRouter = Router();
+
 feedbackRouter.use(authenticate);
 
-feedbackRouter.get('/', requireRole([Role.ADMIN]), async (_req, res, next) => {
-  try {
-    res.json({ feedback: await feedbackRepository.list() });
-  } catch (error) {
-    next(error);
-  }
-});
-
+// POST /feedback
 feedbackRouter.post('/', requireRole([Role.CUSTOMER]), async (req, res, next) => {
   try {
     const data = CreateFeedbackSchema.parse(req.body);
-    const session = await sessionRepository.getById(data.sessionId);
-    if (!session || session.status !== SessionStatus.CLOSED || session.customerId !== req.user!.userId) {
-      throw new AppError('FORBIDDEN', 403, 'Feedback is only available for your completed session');
-    }
-    if (await feedbackRepository.findBySession(data.sessionId)) {
-      throw new AppError('CONFLICT', 409, 'Feedback has already been submitted');
-    }
-    res.status(201).json({ feedback: await feedbackRepository.create(req.user!.userId, data) });
-  } catch (error) {
-    next(error);
+    const item = await feedbackService.createFeedback(req.user!.userId, data);
+    res.status(201).json({ feedback: item });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /feedback (Admin only)
+feedbackRouter.get('/', requireRole([Role.ADMIN]), async (req, res, next) => {
+  try {
+    const { list, stats } = await feedbackService.getFeedbackStats();
+    res.json({ feedback: list, stats });
+  } catch (err) {
+    next(err);
   }
 });

@@ -1,6 +1,6 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { authenticate, requireRole } from '../../middleware/auth';
-import { Role, SessionStatus, SocketEvents, SessionCloseReason, PaySessionSchema, PaymentMethod } from '@/contracts';
+import { Role, SessionStatus, SocketEvents, SessionCloseReason, PaySessionSchema, PaymentMethod, TableStatus } from '@/contracts';
 import { sessionRepository } from './repository';
 import { tableRepository } from '../tables/repository';
 import { orderRepository } from '../orders/repository';
@@ -57,6 +57,37 @@ sessionsRouter.post('/:id/cancel', requireRole([Role.CUSTOMER]), async (req: Req
   }
 });
 
+// POST /sessions/request-bill
+// Transition table to BILLING status
+sessionsRouter.post('/request-bill', requireRole([Role.CUSTOMER, Role.WAITER, Role.ADMIN]), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    let session;
+    if (req.user!.role === Role.CUSTOMER) {
+      session = await sessionRepository.findActiveByCustomerId(req.user!.userId);
+    } else {
+      const { sessionId, tableId } = req.body;
+      if (sessionId) {
+        session = await sessionRepository.getById(sessionId);
+      } else if (tableId) {
+        const activeSessions = await sessionRepository.getActiveSessions();
+        session = activeSessions.find(s => s.tableId === tableId);
+      }
+    }
+
+    if (!session || session.status !== SessionStatus.ACTIVE) {
+      throw new AppError('NOT_FOUND', 404, 'No active session found for this request');
+    }
+
+    const table = await tableRepository.updateStatus(session.tableId, TableStatus.BILLING);
+    req.app.get('io')?.emit(SocketEvents.TABLE_UPDATED, { table });
+    req.app.get('io')?.emit(SocketEvents.SESSION_UPDATED, { sessionId: session.id, status: session.status });
+
+    res.json({ message: 'Bill requested', tableStatus: table.status });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // GET /sessions
 sessionsRouter.get('/', requireRole([Role.CASHIER, Role.ADMIN, Role.WAITER]), async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -85,6 +116,46 @@ sessionsRouter.get('/', requireRole([Role.CASHIER, Role.ADMIN, Role.WAITER]), as
   }
 });
 
+// GET /sessions/:id/orders
+sessionsRouter.get('/:id/orders', requireRole([Role.WAITER, Role.CASHIER, Role.ADMIN]), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const orders = await orderRepository.getOrdersBySession(req.params.id as string);
+    res.json({ orders });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * POST /sessions
+ * Staff seating a walk-in customer
+ */
+sessionsRouter.post('/', requireRole([Role.WAITER, Role.CASHIER, Role.ADMIN]), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { tableId, customerId } = req.body;
+    if (!tableId || !customerId) {
+        throw new AppError('VALIDATION_ERROR', 400, 'Table ID and Customer ID are required');
+    }
+
+    const table = await tableRepository.findById(tableId);
+    if (!table || table.status !== TableStatus.AVAILABLE) {
+        throw new AppError('CONFLICT', 409, 'Table is not available');
+    }
+
+    const session = await sessionRepository.createSessionTransaction(tableId, customerId);
+    const updatedTable = await tableRepository.findById(tableId);
+
+    // Broadcast update
+    if (updatedTable) {
+      req.app.get('io')?.emit(SocketEvents.TABLE_UPDATED, { table: updatedTable });
+    }
+
+    res.status(201).json({ session });
+  } catch (err) {
+    next(err);
+  }
+});
+
 async function handleCloseSession(req: Request, res: Response, closeReason: SessionCloseReason, paymentMethod?: PaymentMethod, discountPercent = 0) {
   const sessionId = req.params.id as string;
   const session = await sessionRepository.getById(sessionId);
@@ -99,6 +170,9 @@ async function handleCloseSession(req: Request, res: Response, closeReason: Sess
     discountPercent,
     ...bill
   });
+
+  const updatedTable = await tableRepository.findById(session.tableId);
+
   await recordAudit({
     actorUserId: req.user!.userId,
     action: closeReason === SessionCloseReason.PAID ? 'PAYMENT_RECORDED' : 'SESSION_FORCE_CLOSED',
@@ -108,6 +182,9 @@ async function handleCloseSession(req: Request, res: Response, closeReason: Sess
   });
 
   req.app.get('io')?.emit(SocketEvents.SESSION_UPDATED, { sessionId: session.id, status: SessionStatus.CLOSED });
+  if (updatedTable) {
+    req.app.get('io')?.emit(SocketEvents.TABLE_UPDATED, { table: updatedTable });
+  }
 
   res.json({ session: updatedSession });
 }

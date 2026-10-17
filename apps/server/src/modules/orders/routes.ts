@@ -1,15 +1,47 @@
 import { Router } from 'express';
 import { authenticate, requireRole } from '../../middleware/auth';
 import { AppError } from '../../middleware/error';
-import { OrderStatus, SocketEvents, CreateOrderSchema, Role, UpdateOrderStatusSchema, canTransitionOrderStatus } from '@/contracts';
+import { OrderStatus, SocketEvents, CreateOrderSchema, Role, UpdateOrderStatusSchema, canTransitionOrderStatus, PaySessionSchema, SessionCloseReason } from '@/contracts';
 import { orderRepository } from './repository';
 import { sessionRepository } from '../sessions/repository';
 import { computeBill } from '../billing';
 import { recordAudit } from '../audit/service';
+import { PaymentService } from '../payments/service';
 
 export const ordersRouter = Router();
+const paymentService = new PaymentService();
 
 ordersRouter.use(authenticate);
+
+// ... (existing routes)
+
+// POST /orders/me/pay
+ordersRouter.post('/me/pay', async (req, res, next) => {
+  try {
+    const activeSession = await sessionRepository.findActiveByCustomerId(req.user!.userId);
+    if (!activeSession) {
+      throw new AppError('FORBIDDEN', 403, 'NO_ACTIVE_SESSION');
+    }
+
+    const data = PaySessionSchema.parse(req.body);
+
+    // Use PaymentService to handle the workflow
+    const result = await paymentService.handleSessionPayment(
+      activeSession.id,
+      data.method,
+      0 // Customers don't apply their own discounts
+    );
+
+    if (result.success) {
+      req.app.get('io')?.emit(SocketEvents.SESSION_UPDATED, { sessionId: activeSession.id, status: 'closed' });
+      res.json({ message: 'Payment successful', transactionId: result.transactionId });
+    } else {
+      res.status(400).json({ error: result.error });
+    }
+  } catch (err) {
+    next(err);
+  }
+});
 
 // POST /orders
 ordersRouter.post('/', async (req, res, next) => {
@@ -68,6 +100,16 @@ ordersRouter.get('/me/bill', async (req, res, next) => {
   }
 });
 
+// GET /orders/history
+ordersRouter.get('/history', async (req, res, next) => {
+  try {
+    const orders = await orderRepository.getOrdersByCustomerId(req.user!.userId);
+    res.json({ orders });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // POST /orders/:id/cancel
 ordersRouter.post('/:id/cancel', async (req, res, next) => {
   try {
@@ -77,12 +119,24 @@ ordersRouter.post('/:id/cancel', async (req, res, next) => {
       throw new AppError('NOT_FOUND', 404, 'Order not found');
     }
 
-    if (order.customerId !== req.user!.userId && req.user!.role !== 'admin') {
-      throw new AppError('FORBIDDEN', 403, 'Cannot cancel another customer order');
-    }
+    // Role-based cancellation logic
+    const isCustomer = req.user!.role === Role.CUSTOMER;
+    const isKitchen = req.user!.role === Role.KITCHEN;
+    const isAdmin = req.user!.role === Role.ADMIN;
 
-    if (order.status !== OrderStatus.PLACED) {
-      throw new AppError('CONFLICT', 409, 'Order cannot be cancelled');
+    if (isCustomer) {
+      if (order.customerId !== req.user!.userId) {
+        throw new AppError('FORBIDDEN', 403, 'Cannot cancel another customer order');
+      }
+      if (order.status !== OrderStatus.PLACED) {
+        throw new AppError('CONFLICT', 409, 'Order is already being prepared and cannot be cancelled by customer');
+      }
+    } else if (isKitchen) {
+       if (order.status !== OrderStatus.PLACED && order.status !== OrderStatus.PREPARING) {
+         throw new AppError('CONFLICT', 409, 'Kitchen can only cancel orders that are placed or preparing');
+       }
+    } else if (!isAdmin) {
+      throw new AppError('FORBIDDEN', 403, 'Insufficient permissions to cancel order');
     }
 
     const updated = await orderRepository.cancelOrder(order.id);
@@ -104,8 +158,8 @@ ordersRouter.get('/', requireRole([Role.KITCHEN, Role.ADMIN, Role.WAITER]), asyn
   }
 });
 
-// PATCH /orders/:id/status (Kitchen & Admin)
-ordersRouter.patch('/:id/status', requireRole([Role.KITCHEN, Role.ADMIN]), async (req, res, next) => {
+// PATCH /orders/:id/status (Kitchen, Waiter, Runner & Admin)
+ordersRouter.patch('/:id/status', requireRole([Role.KITCHEN, Role.ADMIN, Role.WAITER, Role.RUNNER]), async (req, res, next) => {
   try {
     const data = UpdateOrderStatusSchema.parse(req.body);
     const orderId = req.params.id as string;
@@ -115,7 +169,16 @@ ordersRouter.patch('/:id/status', requireRole([Role.KITCHEN, Role.ADMIN]), async
     }
 
     if (!canTransitionOrderStatus(order.status, data.status)) {
-      throw new AppError('CONFLICT', 409, 'Invalid status transition');
+      throw new AppError('CONFLICT', 409, `Invalid status transition from ${order.status} to ${data.status}`);
+    }
+
+    // Role-based restrictions on transitions
+    if (data.status === OrderStatus.SERVED && ![Role.WAITER, Role.RUNNER, Role.ADMIN, Role.KITCHEN].includes(req.user!.role)) {
+      throw new AppError('FORBIDDEN', 403, 'Only staff can mark orders as served');
+    }
+
+    if ([OrderStatus.PREPARING, OrderStatus.READY].includes(data.status) && ![Role.KITCHEN, Role.ADMIN].includes(req.user!.role)) {
+      throw new AppError('FORBIDDEN', 403, 'Only kitchen staff can update preparation status');
     }
 
     const updated = await orderRepository.updateOrderStatus(order.id, data.status);

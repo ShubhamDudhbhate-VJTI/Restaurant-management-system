@@ -1,9 +1,10 @@
 import { Router } from 'express';
 import { authenticate, requireRole } from '../../middleware/auth';
 import { AppError } from '../../middleware/error';
-import { CreateReservationSchema, Role, ReservationStatus, UpdateReservationStatusSchema } from '@/contracts';
+import { CreateReservationSchema, Role, ReservationStatus, UpdateReservationStatusSchema, TableStatus, SocketEvents } from '@/contracts';
 import { reservationRepository } from './repository';
 import { tableRepository } from '../tables/repository';
+import { sessionRepository } from '../sessions/repository';
 import { recordAudit } from '../audit/service';
 
 export const reservationsRouter = Router();
@@ -47,16 +48,58 @@ reservationsRouter.post('/', requireRole([Role.CUSTOMER]), async (req, res, next
   }
 });
 
-reservationsRouter.patch('/:id/status', requireRole([Role.ADMIN]), async (req, res, next) => {
+reservationsRouter.patch('/:id/status', requireRole([Role.ADMIN, Role.WAITER]), async (req, res, next) => {
   try {
     const data = UpdateReservationStatusSchema.parse(req.body);
     const reservation = await reservationRepository.findById(String(req.params.id));
     if (!reservation) throw new AppError('NOT_FOUND', 404, 'Reservation not found');
+
+    // Validate transition
+    if (data.status === ReservationStatus.SEATED) {
+      if (reservation.status !== ReservationStatus.CONFIRMED && reservation.status !== ReservationStatus.PENDING) {
+        throw new AppError('CONFLICT', 409, 'Only confirmed or pending reservations can be seated');
+      }
+
+      // Check if table is available
+      const table = await tableRepository.findById(reservation.tableId);
+      if (!table || table.status !== TableStatus.AVAILABLE) {
+        throw new AppError('CONFLICT', 409, 'Table is not available for seating');
+      }
+
+      // Check if customer already has an active session
+      const existingSession = await sessionRepository.findActiveByCustomerId(reservation.customerId);
+      if (existingSession) {
+        throw new AppError('CONFLICT', 409, 'Customer already has an active session');
+      }
+
+      // Perform seating: Create session and update reservation status
+      // Note: sessionRepository.createSessionTransaction updates the table status to OCCUPIED
+      const session = await sessionRepository.createSessionTransaction(reservation.tableId, reservation.customerId, reservation.id);
+      const updated = await reservationRepository.updateStatus(reservation.id, ReservationStatus.SEATED);
+
+      await recordAudit({
+        actorUserId: req.user!.userId,
+        action: 'RESERVATION_SEATED',
+        entityType: 'RESERVATION',
+        entityId: reservation.id,
+        metadata: { sessionId: session.id, tableId: reservation.tableId }
+      });
+
+      req.app.get('io')?.emit(SocketEvents.TABLE_UPDATED, { tableId: reservation.tableId, status: TableStatus.OCCUPIED });
+
+      return res.json({ reservation: updated, session });
+    }
+
     if (data.status === ReservationStatus.PENDING && reservation.status !== ReservationStatus.PENDING) {
       throw new AppError('CONFLICT', 409, 'Invalid reservation transition');
     }
+
     const updated = await reservationRepository.updateStatus(reservation.id, data.status);
     await recordAudit({ actorUserId: req.user!.userId, action: 'RESERVATION_STATUS_CHANGED', entityType: 'RESERVATION', entityId: reservation.id, metadata: { status: data.status } });
+
+    // If completed, ensure table is available?
+    // Usually a reservation is COMPLETED when the session ends.
+
     res.json({ reservation: updated });
   } catch (error) {
     next(error);
