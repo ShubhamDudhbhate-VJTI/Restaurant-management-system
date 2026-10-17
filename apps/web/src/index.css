@@ -6,27 +6,44 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 0 0% 3.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 3.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 3.9%;
-    --primary: 142 71% 45%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 0 0% 96.1%;
-    --secondary-foreground: 0 0% 9%;
-    --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 45.1%;
-    --accent: 0 0% 96.1%;
-    --accent-foreground: 0 0% 9%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 89.8%;
-    --input: 0 0% 89.8%;
-    --ring: 142 71% 45%;
-    --radius: 0.75rem;
+    --background: 35 30% 92%; /* #f3eadf */
+    --foreground: 25 10% 15%; /* #28231f */
+    --card: 35 30% 98%; /* #fffaf3 */
+    --card-foreground: 25 10% 15%;
+    --popover: 35 30% 98%;
+    --popover-foreground: 25 10% 15%;
+    --primary: 153 34% 31%; /* #356b4f */
+    --primary-foreground: 35 30% 98%;
+    --secondary: 35 20% 88%; /* #eadfd2 */
+    --secondary-foreground: 25 10% 25%;
+    --muted: 35 20% 88%;
+    --muted-foreground: 25 10% 45%;
+    --accent: 35 20% 88%;
+    --accent-foreground: 25 10% 15%;
+    --destructive: 12 45% 45%; /* #a3543e */
+    --destructive-foreground: 35 30% 98%;
+    --border: 30 15% 82%; /* #d9cbbd */
+    --input: 30 15% 82%;
+    --ring: 153 34% 31%;
+    --radius: 1rem;
   }
+
+  /* Status Colors */
+  --status-free-bg: 145 30% 91%;
+  --status-free-text: 153 34% 31%;
+  --status-held-bg: 35 25% 88%;
+  --status-held-text: 25 10% 45%;
+  --status-occupied-bg: 35 20% 85%;
+  --status-occupied-text: 25 10% 30%;
+
+  --status-placed-bg: 0 0% 93%;
+  --status-placed-text: 0 0% 30%;
+  --status-preparing-bg: 210 40% 93%;
+  --status-preparing-text: 215 50% 35%;
+  --status-ready-bg: 45 60% 92%;
+  --status-ready-text: 35 60% 30%;
+  --status-served-bg: 150 40% 92%;
+  --status-served-text: 153 40% 25%;
 
   /* Shared light surface for operational pages. Keeps the existing page structure
      while normalizing legacy dark utility classes to the RMS paper palette. */
@@ -103,18 +120,34 @@
 }
 
 @media print {
-  body {
-    background: white !important;
-    color: black !important;
-  }
-
-  body > * {
+  /* Hide the entire application UI and any overlays */
+  #root,
+  [role="dialog"],
+  .backdrop-blur-md,
+  header,
+  nav {
     display: none !important;
   }
 
+  body {
+    background: white !important;
+    margin: 0;
+    padding: 0;
+  }
+
+  /* Force the print template to be visible and correctly positioned */
   .print-only {
     display: block !important;
-    color: black;
-    padding: 2rem;
+    visibility: visible !important;
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 80mm !important;
+    margin: 0 auto !important;
+    background: white !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    font-family: 'Geist Sans', ui-sans-serif, system-ui, sans-serif !important;
+    color: #28231f !important;
   }
 }

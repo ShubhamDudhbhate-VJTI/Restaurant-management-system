@@ -7,6 +7,7 @@ const links = [
   { label: 'Tables', to: '/tables' },
   { label: 'Menu', to: '/menu', roles: [Role.CUSTOMER, Role.WAITER, Role.ADMIN] },
   { label: 'Orders', to: '/orders', roles: [Role.CUSTOMER] },
+  { label: 'History', to: '/history', roles: [Role.CUSTOMER] },
   { label: 'Kitchen', to: '/kitchen', roles: [Role.KITCHEN, Role.ADMIN] },
   { label: 'Cashier', to: '/cashier', roles: [Role.CASHIER, Role.ADMIN] },
   { label: 'Waiter', to: '/waiter', roles: [Role.WAITER, Role.ADMIN] },
