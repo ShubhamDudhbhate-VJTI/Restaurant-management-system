@@ -1,15 +1,47 @@
 import { Router } from 'express';
 import { authenticate, requireRole } from '../../middleware/auth';
 import { AppError } from '../../middleware/error';
-import { OrderStatus, SocketEvents, CreateOrderSchema, Role, UpdateOrderStatusSchema, canTransitionOrderStatus } from '@/contracts';
+import { OrderStatus, SocketEvents, CreateOrderSchema, Role, UpdateOrderStatusSchema, canTransitionOrderStatus, PaySessionSchema, SessionCloseReason } from '@/contracts';
 import { orderRepository } from './repository';
 import { sessionRepository } from '../sessions/repository';
 import { computeBill } from '../billing';
 import { recordAudit } from '../audit/service';
+import { PaymentService } from '../payments/service';
 
 export const ordersRouter = Router();
+const paymentService = new PaymentService();
 
 ordersRouter.use(authenticate);
+
+// ... (existing routes)
+
+// POST /orders/me/pay
+ordersRouter.post('/me/pay', async (req, res, next) => {
+  try {
+    const activeSession = await sessionRepository.findActiveByCustomerId(req.user!.userId);
+    if (!activeSession) {
+      throw new AppError('FORBIDDEN', 403, 'NO_ACTIVE_SESSION');
+    }
+
+    const data = PaySessionSchema.parse(req.body);
+
+    // Use PaymentService to handle the workflow
+    const result = await paymentService.handleSessionPayment(
+      activeSession.id,
+      data.method,
+      0 // Customers don't apply their own discounts
+    );
+
+    if (result.success) {
+      req.app.get('io')?.emit(SocketEvents.SESSION_UPDATED, { sessionId: activeSession.id, status: 'closed' });
+      res.json({ message: 'Payment successful', transactionId: result.transactionId });
+    } else {
+      res.status(400).json({ error: result.error });
+    }
+  } catch (err) {
+    next(err);
+  }
+});
 
 // POST /orders
 ordersRouter.post('/', async (req, res, next) => {
@@ -68,26 +100,21 @@ ordersRouter.get('/me/bill', async (req, res, next) => {
   }
 });
 
+// GET /orders/history
+ordersRouter.get('/history', async (req, res, next) => {
+  try {
+    const orders = await orderRepository.getOrdersByCustomerId(req.user!.userId);
+    res.json({ orders });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // POST /orders/:id/cancel
 ordersRouter.post('/:id/cancel', async (req, res, next) => {
   try {
-    const orderId = req.params.id as string;
-    const order = await orderRepository.getOrderById(orderId);
-    if (!order) {
-      throw new AppError('NOT_FOUND', 404, 'Order not found');
-    }
-
-    if (order.customerId !== req.user!.userId && req.user!.role !== 'admin') {
-      throw new AppError('FORBIDDEN', 403, 'Cannot cancel another customer order');
-    }
-
-    if (order.status !== OrderStatus.PLACED) {
-      throw new AppError('CONFLICT', 409, 'Order cannot be cancelled');
-    }
-
-    const updated = await orderRepository.cancelOrder(order.id);
-    await recordAudit({ actorUserId: req.user!.userId, action: 'ORDER_CANCELLED', entityType: 'ORDER', entityId: order.id });
-    req.app.get('io')?.emit(SocketEvents.ORDER_STATUS_CHANGED, { orderId: order.id, status: updated.status });
+    const updated = await orderService.cancelOrder(req.user!.userId, req.user!.role, req.params.id);
+    req.app.get('io')?.emit(SocketEvents.ORDER_STATUS_CHANGED, { orderId: updated.id, status: updated.status });
     res.json({ order: updated });
   } catch (err) {
     next(err);
@@ -104,23 +131,12 @@ ordersRouter.get('/', requireRole([Role.KITCHEN, Role.ADMIN, Role.WAITER]), asyn
   }
 });
 
-// PATCH /orders/:id/status (Kitchen & Admin)
-ordersRouter.patch('/:id/status', requireRole([Role.KITCHEN, Role.ADMIN]), async (req, res, next) => {
+// PATCH /orders/:id/status (Kitchen, Waiter, Runner & Admin)
+ordersRouter.patch('/:id/status', requireRole([Role.KITCHEN, Role.ADMIN, Role.WAITER, Role.RUNNER]), async (req, res, next) => {
   try {
     const data = UpdateOrderStatusSchema.parse(req.body);
-    const orderId = req.params.id as string;
-    const order = await orderRepository.getOrderById(orderId);
-    if (!order) {
-      throw new AppError('NOT_FOUND', 404, 'Order not found');
-    }
-
-    if (!canTransitionOrderStatus(order.status, data.status)) {
-      throw new AppError('CONFLICT', 409, 'Invalid status transition');
-    }
-
-    const updated = await orderRepository.updateOrderStatus(order.id, data.status);
-    await recordAudit({ actorUserId: req.user!.userId, action: 'ORDER_STATUS_CHANGED', entityType: 'ORDER', entityId: order.id, metadata: { status: data.status } });
-    req.app.get('io')?.emit(SocketEvents.ORDER_STATUS_CHANGED, { orderId: order.id, status: updated.status });
+    const updated = await orderService.updateStatus(req.user!.userId, req.user!.role, req.params.id, data.status);
+    req.app.get('io')?.emit(SocketEvents.ORDER_STATUS_CHANGED, { orderId: updated.id, status: updated.status });
     res.json({ order: updated });
   } catch (err) {
     next(err);

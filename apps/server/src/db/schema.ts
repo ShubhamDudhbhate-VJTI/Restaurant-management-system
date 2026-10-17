@@ -1,34 +1,35 @@
-import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
+import { pgTable, text, integer, boolean, timestamp, varchar } from 'drizzle-orm/pg-core';
 import { Role, TableStatus, SessionStatus, OrderStatus, SessionCloseReason, PaymentMethod, ReservationStatus } from '@/contracts';
 import { nanoid } from 'nanoid';
 
-export const users = sqliteTable('users', {
+export const users = pgTable('users', {
   id: text('id').$defaultFn(() => nanoid()).primaryKey(),
   name: text('name').notNull(),
   email: text('email').notNull().unique(),
   passwordHash: text('password_hash').notNull(),
-  role: text('role').notNull().$type<Role>(),
-  isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
-  createdAt: integer('created_at').notNull().$defaultFn(() => Date.now()),
+  role: varchar('role', { length: 20 }).notNull().$type<Role>(),
+  isActive: boolean('is_active').notNull().default(true),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
 });
 
-export const tables = sqliteTable('tables', {
+export const tables = pgTable('tables', {
   id: text('id').$defaultFn(() => nanoid()).primaryKey(),
   name: text('name').notNull(),
-  qrToken: text('qr_token').notNull().unique().$defaultFn(() => nanoid(10)),
+  qrToken: varchar('qr_token', { length: 50 }).notNull().unique().$defaultFn(() => nanoid(10)),
   seats: integer('seats').notNull(),
-  status: text('status').notNull().$type<TableStatus>().$defaultFn(() => TableStatus.AVAILABLE),
+  status: varchar('status', { length: 20 }).notNull().$type<TableStatus>().$defaultFn(() => TableStatus.AVAILABLE),
 });
 
-export const sessions = sqliteTable('sessions', {
+export const sessions = pgTable('sessions', {
   id: text('id').$defaultFn(() => nanoid()).primaryKey(),
   tableId: text('table_id').notNull().references(() => tables.id),
   customerId: text('customer_id').notNull().references(() => users.id),
-  status: text('status').notNull().$type<SessionStatus>().$defaultFn(() => SessionStatus.ACTIVE),
-  startedAt: integer('started_at').notNull().$defaultFn(() => Date.now()),
-  endedAt: integer('ended_at'),
-  closeReason: text('close_reason').$type<SessionCloseReason>(),
-  paymentMethod: text('payment_method').$type<PaymentMethod>(),
+  reservationId: text('reservation_id').references(() => reservations.id),
+  status: varchar('status', { length: 20 }).notNull().$type<SessionStatus>().$defaultFn(() => SessionStatus.ACTIVE),
+  startedAt: timestamp('started_at').notNull().defaultNow(),
+  endedAt: timestamp('ended_at'),
+  closeReason: varchar('close_reason', { length: 20 }).$type<SessionCloseReason>(),
+  paymentMethod: varchar('payment_method', { length: 20 }).$type<PaymentMethod>(),
   subtotalCents: integer('subtotal_cents'),
   cgstCents: integer('cgst_cents'),
   sgstCents: integer('sgst_cents'),
@@ -37,7 +38,16 @@ export const sessions = sqliteTable('sessions', {
   discountPercent: integer('discount_percent'),
 });
 
-export const reservations = sqliteTable('reservations', {
+export const payments = pgTable('payments', {
+  id: text('id').$defaultFn(() => nanoid()).primaryKey(),
+  sessionId: text('session_id').notNull().references(() => sessions.id),
+  amountCents: integer('amount_cents').notNull(),
+  method: varchar('method', { length: 20 }).notNull().$type<PaymentMethod>(),
+  transactionId: text('transaction_id'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+
+export const reservations = pgTable('reservations', {
   id: text('id').$defaultFn(() => nanoid()).primaryKey(),
   customerId: text('customer_id').notNull().references(() => users.id),
   tableId: text('table_id').notNull().references(() => tables.id),
@@ -45,56 +55,57 @@ export const reservations = sqliteTable('reservations', {
   startTime: text('start_time').notNull(),
   endTime: text('end_time').notNull(),
   guestCount: integer('guest_count').notNull(),
-  status: text('status').notNull().$type<ReservationStatus>().$defaultFn(() => ReservationStatus.PENDING),
-  createdAt: integer('created_at').notNull().$defaultFn(() => Date.now()),
+  status: varchar('status', { length: 20 }).notNull().$type<ReservationStatus>().$defaultFn(() => ReservationStatus.PENDING),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
 });
 
-export const feedback = sqliteTable('feedback', {
+export const feedback = pgTable('feedback', {
   id: text('id').$defaultFn(() => nanoid()).primaryKey(),
   sessionId: text('session_id').notNull().references(() => sessions.id),
   customerId: text('customer_id').notNull().references(() => users.id),
   rating: integer('rating').notNull(),
   comment: text('comment'),
-  createdAt: integer('created_at').notNull().$defaultFn(() => Date.now()),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
 });
 
-export const auditLogs = sqliteTable('audit_logs', {
+export const auditLogs = pgTable('audit_logs', {
   id: text('id').$defaultFn(() => nanoid()).primaryKey(),
   actorUserId: text('actor_user_id').notNull().references(() => users.id),
   action: text('action').notNull(),
   entityType: text('entity_type').notNull(),
   entityId: text('entity_id').notNull(),
   metadata: text('metadata'),
-  createdAt: integer('created_at').notNull().$defaultFn(() => Date.now()),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
 });
 
-export const categories = sqliteTable('categories', {
+export const categories = pgTable('categories', {
   id: text('id').$defaultFn(() => nanoid()).primaryKey(),
   name: text('name').notNull(),
   sortOrder: integer('sort_order').notNull().default(0),
 });
 
-export const menuItems = sqliteTable('menu_items', {
+export const menuItems = pgTable('menu_items', {
   id: text('id').$defaultFn(() => nanoid()).primaryKey(),
-  categoryId: text('category_id').notNull().references(() => categories.id),
+  categoryId: text('category_id').notNull().references(() => categories.id, { onDelete: 'cascade' }),
   name: text('name').notNull(),
   description: text('description'),
   priceCents: integer('price_cents').notNull(),
   imageUrl: text('image_url'),
-  isAvailable: integer('is_available', { mode: 'boolean' }).notNull().default(true),
+  isAvailable: boolean('is_available').notNull().default(true),
   sortOrder: integer('sort_order').notNull().default(0),
 });
 
-export const orders = sqliteTable('orders', {
+export const orders = pgTable('orders', {
   id: text('id').$defaultFn(() => nanoid()).primaryKey(),
   sessionId: text('session_id').notNull().references(() => sessions.id),
   customerId: text('customer_id').notNull().references(() => users.id),
-  status: text('status').notNull().$type<OrderStatus>().$defaultFn(() => OrderStatus.PLACED),
-  createdAt: integer('created_at').notNull().$defaultFn(() => Date.now()),
-  updatedAt: integer('updated_at').notNull().$defaultFn(() => Date.now()),
+  status: varchar('status', { length: 20 }).notNull().$type<OrderStatus>().$defaultFn(() => OrderStatus.PLACED),
+  notes: text('notes'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });
 
-export const orderItems = sqliteTable('order_items', {
+export const orderItems = pgTable('order_items', {
   id: text('id').$defaultFn(() => nanoid()).primaryKey(),
   orderId: text('order_id').notNull().references(() => orders.id),
   menuItemId: text('menu_item_id').notNull().references(() => menuItems.id),

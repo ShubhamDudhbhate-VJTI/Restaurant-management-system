@@ -163,6 +163,7 @@ export const OrderSchema = z.object({
   sessionId: z.string(),
   customerId: z.string(),
   status: z.nativeEnum(OrderStatus),
+  notes: z.string().nullable().optional(),
   createdAt: z.number(),
   updatedAt: z.number()
 });
@@ -172,6 +173,7 @@ export type OrderWithItems = Order & { items: OrderItem[], tableName?: string };
 
 export const CreateOrderSchema = z.object({
   sessionId: z.string().min(1).optional(),
+  notes: z.string().max(500).optional(),
   items: z.array(z.object({
     menuItemId: z.string(),
     quantity: z.number().int().min(1)
@@ -194,6 +196,9 @@ export const UpdateOrderStatusSchema = z.object({
 export type UpdateOrderStatusInput = z.infer<typeof UpdateOrderStatusSchema>;
 
 export function canTransitionOrderStatus(current: OrderStatus, next: OrderStatus): boolean {
+  if (next === OrderStatus.CANCELLED) {
+    return current === OrderStatus.PLACED || current === OrderStatus.PREPARING;
+  }
   if (current === OrderStatus.PLACED && next === OrderStatus.PREPARING) return true;
   if (current === OrderStatus.PREPARING && next === OrderStatus.READY) return true;
   if (current === OrderStatus.READY && next === OrderStatus.SERVED) return true;

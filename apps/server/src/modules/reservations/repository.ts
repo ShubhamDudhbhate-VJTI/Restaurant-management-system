@@ -5,11 +5,12 @@ import { CreateReservationInput, ReservationStatus } from '@/contracts';
 
 export const reservationRepository = {
   async findForCustomer(customerId: string) {
-    return db.select().from(reservations).where(eq(reservations.customerId, customerId)).all();
+    const list = await db.select().from(reservations).where(eq(reservations.customerId, customerId));
+    return list.map(r => ({ ...r, createdAt: r.createdAt.getTime() }));
   },
 
   async findForDate(reservationDate: string) {
-    return db.select({
+    const list = await db.select({
       id: reservations.id,
       customerId: reservations.customerId,
       tableId: reservations.tableId,
@@ -24,27 +25,28 @@ export const reservationRepository = {
     })
       .from(reservations)
       .innerJoin(tables, eq(reservations.tableId, tables.id))
-      .where(eq(reservations.reservationDate, reservationDate))
-      .all();
+      .where(eq(reservations.reservationDate, reservationDate));
+    return list.map(r => ({ ...r, createdAt: r.createdAt.getTime() }));
   },
 
   async findById(id: string) {
     const [reservation] = await db.select().from(reservations).where(eq(reservations.id, id)).limit(1);
-    return reservation || null;
+    if (!reservation) return null;
+    return { ...reservation, createdAt: reservation.createdAt.getTime() };
   },
 
   async create(customerId: string, data: CreateReservationInput) {
-    return db.transaction((tx) => {
+    return db.transaction(async (tx) => {
       if (data.endTime <= data.startTime) {
         throw new Error('INVALID_TIME_RANGE');
       }
 
-      const conflicts = tx.select().from(reservations).where(and(
+      const conflicts = await tx.select().from(reservations).where(and(
         eq(reservations.tableId, data.tableId),
         eq(reservations.reservationDate, data.reservationDate),
         ne(reservations.status, ReservationStatus.CANCELLED),
         ne(reservations.status, ReservationStatus.COMPLETED),
-      )).all();
+      ));
 
       const overlaps = conflicts.some((reservation) =>
         data.startTime < reservation.endTime && data.endTime > reservation.startTime
@@ -53,15 +55,15 @@ export const reservationRepository = {
         throw new Error('TABLE_ALREADY_RESERVED');
       }
 
-      const [reservation] = tx.insert(reservations).values({
+      const [reservation] = await tx.insert(reservations).values({
         customerId,
         tableId: data.tableId,
         reservationDate: data.reservationDate,
         startTime: data.startTime,
         endTime: data.endTime,
         guestCount: data.guestCount,
-      }).returning().all();
-      return reservation;
+      }).returning();
+      return { ...reservation, createdAt: reservation.createdAt.getTime() };
     });
   },
 
@@ -70,6 +72,7 @@ export const reservationRepository = {
       .set({ status })
       .where(eq(reservations.id, id))
       .returning();
-    return reservation || null;
+    if (!reservation) return null;
+    return { ...reservation, createdAt: reservation.createdAt.getTime() };
   },
 };

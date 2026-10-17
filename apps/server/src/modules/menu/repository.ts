@@ -8,67 +8,64 @@ export const menuRepository = {
   async getAllCategories() {
     return db.select()
       .from(categories)
-      .orderBy(asc(categories.sortOrder))
-      .all();
+      .orderBy(asc(categories.sortOrder));
   },
 
   async createCategory(data: CreateCategoryInput) {
-    return db.insert(categories)
+    const [row] = await db.insert(categories)
       .values(data)
-      .returning()
-      .get();
+      .returning();
+    return row;
   },
 
   async updateCategory(id: string, data: UpdateCategoryInput) {
-    return db.update(categories)
+    const [row] = await db.update(categories)
       .set(data)
       .where(eq(categories.id, id))
-      .returning()
-      .get();
+      .returning();
+    return row;
   },
 
   async deleteCategory(id: string) {
-    return db.delete(categories)
+    const [row] = await db.delete(categories)
       .where(eq(categories.id, id))
-      .returning()
-      .get();
+      .returning();
+    return row;
   },
 
   // Menu Items
   async getAllMenuItems() {
     return db.select()
       .from(menuItems)
-      .orderBy(asc(menuItems.categoryId), asc(menuItems.sortOrder))
-      .all();
+      .orderBy(asc(menuItems.categoryId), asc(menuItems.sortOrder));
   },
 
   async getMenuItemsByCategory(categoryId: string) {
     return db.select()
       .from(menuItems)
       .where(eq(menuItems.categoryId, categoryId))
-      .orderBy(asc(menuItems.sortOrder))
-      .all();
+      .orderBy(asc(menuItems.sortOrder));
   },
 
   async createMenuItem(data: CreateMenuItemInput) {
-    return db.insert(menuItems)
+    const [row] = await db.insert(menuItems)
       .values(data)
-      .returning()
-      .get();
+      .returning();
+    return row;
   },
 
   async updateMenuItem(id: string, data: UpdateMenuItemInput) {
-    return db.update(menuItems)
+    const [row] = await db.update(menuItems)
       .set(data)
       .where(eq(menuItems.id, id))
-      .returning()
-      .get();
+      .returning();
+    return row;
   },
 
   async deleteMenuItem(id: string) {
-    return db.delete(menuItems)
+    const [row] = await db.delete(menuItems)
       .where(eq(menuItems.id, id))
-      .returning()
-      .get();
+      .returning();
+    return row;
   }
 };

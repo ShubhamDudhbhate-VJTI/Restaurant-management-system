@@ -4,6 +4,7 @@ import { Role, SocketEvents } from '@/contracts';
 import { menuRepository } from './repository';
 import { menuService } from './service';
 import { CreateCategorySchema, UpdateCategorySchema, CreateMenuItemSchema, UpdateMenuItemSchema } from '@/contracts';
+import { z } from 'zod';
 
 export const menuRouter = Router();
 
@@ -68,6 +69,17 @@ menuRouter.put('/items/:id', authenticate, requireRole([Role.ADMIN]), async (req
   try {
     const data = UpdateMenuItemSchema.parse(req.body);
     const item = await menuRepository.updateMenuItem(req.params.id as string, data);
+    req.app.get('io')?.emit(SocketEvents.MENU_UPDATED);
+    res.json({ item });
+  } catch (err) {
+    next(err);
+  }
+});
+
+menuRouter.patch('/items/:id/availability', authenticate, requireRole([Role.ADMIN, Role.KITCHEN]), async (req, res, next) => {
+  try {
+    const { isAvailable } = z.object({ isAvailable: z.boolean() }).parse(req.body);
+    const item = await menuRepository.updateMenuItem(req.params.id as string, { isAvailable });
     req.app.get('io')?.emit(SocketEvents.MENU_UPDATED);
     res.json({ item });
   } catch (err) {

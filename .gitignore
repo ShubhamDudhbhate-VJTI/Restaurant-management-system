@@ -35,3 +35,13 @@ pnpm-debug.log*
 # OS Files
 .DS_Store
 Thumbs.db
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+design/.idea/
+
+# Local Lockfiles (Optional, but often ignored in monorepos if using root lock)
+apps/web/package-lock.json

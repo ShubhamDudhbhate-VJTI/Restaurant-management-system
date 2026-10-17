@@ -23,7 +23,7 @@ async function seed() {
       email: user.email,
       passwordHash,
       role: user.role
-    }).onConflictDoNothing(); // If we run seed twice it's fine
+    }).onConflictDoNothing({ target: users.email }); // Specify target for PG
   }
 
   // Create tables
