@@ -1,9 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../api/client';
-import type { OrderWithItems, CreateOrderInput, Bill } from '@/contracts';
+import { OrderWithItems, CreateOrderInput, Bill, PaymentMethod } from '@/contracts';
 import { useEffect } from 'react';
 import { socket } from '../lib/socket';
 import { SocketEvents } from '@/contracts';
+import { feedbackApi } from '../api/feedback';
 
 export function useOrders() {
   const queryClient = useQueryClient();
@@ -32,9 +33,12 @@ export function useOrders() {
 
     socket.on(SocketEvents.ORDER_CREATED, handleUpdate);
     socket.on(SocketEvents.ORDER_STATUS_CHANGED, handleUpdate);
+    socket.on('session:updated', handleUpdate);
+
     return () => {
       socket.off(SocketEvents.ORDER_CREATED, handleUpdate);
       socket.off(SocketEvents.ORDER_STATUS_CHANGED, handleUpdate);
+      socket.off('session:updated', handleUpdate);
     };
   }, [queryClient]);
 
@@ -58,6 +62,27 @@ export function useOrders() {
     }
   });
 
+  const payMutation = useMutation({
+    mutationFn: async ({ method }: { method: PaymentMethod }) => {
+      // For customer, we assume they pay for their current session
+      const res = await apiClient.post('/orders/me/pay', { method, discountPercent: 0 });
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['orders', 'me'] });
+      queryClient.invalidateQueries({ queryKey: ['orders', 'me', 'bill'] });
+      queryClient.invalidateQueries({ queryKey: ['orders', 'history'] });
+    }
+  });
+
+  const historyQuery = useQuery<OrderWithItems[]>({
+    queryKey: ['orders', 'history'],
+    queryFn: async () => {
+      const res = await apiClient.get<{ orders: OrderWithItems[] }>('/orders/history');
+      return res.data.orders;
+    }
+  });
+
   return {
     orders: ordersQuery.data,
     isLoadingOrders: ordersQuery.isLoading,
@@ -65,7 +90,22 @@ export function useOrders() {
     bill: billQuery.data,
     isLoadingBill: billQuery.isLoading,
     billError: billQuery.error,
+    history: historyQuery.data,
+    isLoadingHistory: historyQuery.isLoading,
     placeOrder,
-    cancelOrder
+    cancelOrder,
+    pay: payMutation.mutateAsync,
+    isPaying: payMutation.isPending,
+    requestBill: useMutation({
+      mutationFn: async () => {
+        await apiClient.post('/sessions/request-bill');
+      },
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['orders', 'me'] });
+      }
+    }).mutateAsync,
+    submitFeedback: useMutation({
+      mutationFn: async (data: Parameters<typeof feedbackApi.create>[0]) => feedbackApi.create(data),
+    }).mutateAsync
   };
 }

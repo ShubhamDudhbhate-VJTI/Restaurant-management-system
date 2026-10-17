@@ -8,6 +8,7 @@ import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
 import { ShoppingBag, X, Plus, Minus } from 'lucide-react';
 import { Skeleton } from '../components/ui/skeleton';
+import { Button } from '../components/ui/button';
 
 gsap.registerPlugin(useGSAP);
 
@@ -161,45 +162,49 @@ export default function MenuPage() {
     }
 
     return (
-      <div className="space-y-16">
+      <div className="space-y-20">
         {menu.filter(cat => cat.items.length > 0).map(category => (
           <section key={category.id} className="menu-category">
-            <h2 className="mb-8 flex items-center gap-4 text-2xl font-light tracking-wide text-[#28231f]">
+            <h2 className="mb-10 flex items-center gap-6 text-3xl font-normal tracking-tight text-[#28231f]">
               {category.name}
               <div className="h-px flex-1 bg-[#d9cbbd]"></div>
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               {category.items.filter(i => i.isAvailable).map(item => (
                 <div key={item.id} className="stagger-card group cursor-pointer" onClick={() => addToCart(item)}>
-                    <div className="rounded-[2rem] bg-[#e8dfd5] p-1.5 ring-1 ring-[#d1c1b1] transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:scale-[1.02]">
-                      <div className="relative flex h-full flex-col justify-between overflow-hidden rounded-[calc(2rem-0.375rem)] bg-[#fffaf3] shadow-[0_12px_30px_rgba(88,62,42,0.06)]">
-                      <div className="grid grid-cols-[112px_1fr] gap-5 p-5 sm:grid-cols-[136px_1fr] sm:p-6">
-                        <div className="relative aspect-square overflow-hidden rounded-[1.25rem] bg-[#e8dfd5]">
+                    <div className="rounded-[2.5rem] bg-[#fffaf3] p-1.5 ring-1 ring-[#d9cbbd] transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:scale-[1.02] hover:shadow-2xl">
+                      <div className="relative flex h-full flex-col justify-between overflow-hidden rounded-[calc(2.5rem-0.375rem)] bg-[#fffaf3] shadow-[0_12px_30px_rgba(88,62,42,0.04)]">
+                      <div className="grid grid-cols-[120px_1fr] gap-6 p-6 sm:grid-cols-[160px_1fr] sm:p-8">
+                        <div className="relative aspect-square overflow-hidden rounded-[1.75rem] bg-[#f3eadf]">
                           <img
                             src={item.imageUrl || fallbackMenuImages[item.name]}
                             alt={item.name}
                             loading="lazy"
-                            className="h-full w-full object-cover transition-transform duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:scale-105"
+                            className="h-full w-full object-cover transition-transform duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:scale-110"
                           />
                         </div>
-                        <div>
-                        <div className="flex justify-between items-start mb-2">
-                          <h3 className="text-xl font-normal text-[#28231f]">{item.name}</h3>
-                          <div className="ml-4 shrink-0 text-lg font-medium text-[#a3543e]">
+                        <div className="flex flex-col justify-center">
+                          <div className="flex justify-between items-start mb-3">
+                            <h3 className="text-2xl font-normal text-[#28231f] tracking-tight">{item.name}</h3>
+                          </div>
+                          {item.description && (
+                            <p className="text-sm leading-relaxed text-[#756b63] line-clamp-2 mb-4">{item.description}</p>
+                          )}
+                          <div className="text-xl font-normal text-[#a3543e]">
                             ₹{(item.priceCents / 100).toFixed(2)}
                           </div>
                         </div>
-                        {item.description && (
-                          <p className="mt-2 text-sm leading-relaxed text-[#756b63]">{item.description}</p>
-                        )}
-                        </div>
                       </div>
-                      <div className="flex justify-end border-t border-[#eadfd4] px-5 pb-5 pt-4 sm:px-6 sm:pb-6">
+                      <div className="flex justify-end border-t border-[#f3eadf] px-6 pb-6 pt-5 sm:px-8 sm:pb-8">
                         <button 
-                          className="text-xs font-semibold uppercase tracking-widest text-[#356b4f] transition-colors hover:text-[#a3543e]"
+                          className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#356b4f] transition-all hover:text-[#a3543e] flex items-center gap-2"
                           onClick={(e) => { e.stopPropagation(); addToCart(item); }}
                         >
-                          {session ? '+ Add to order' : 'Book a table to order'}
+                          {session ? (
+                            <><Plus className="w-3 h-3" /> Add to Order</>
+                          ) : (
+                            'Scan Table to Order'
+                          )}
                         </button>
                       </div>
                     </div>
@@ -251,15 +256,15 @@ export default function MenuPage() {
       {cartItemCount > 0 && !isCartOpen && (
         <button
           onClick={() => setIsCartOpen(true)}
-          className="fixed bottom-8 right-8 bg-[#111] border border-white/10 text-white p-4 pr-6 rounded-full shadow-2xl hover:bg-white/5 transition-all duration-300 hover:scale-105 z-40 flex items-center gap-4 group"
+          className="fixed bottom-8 right-8 bg-[#28231f] text-white p-5 pr-8 rounded-full shadow-2xl hover:bg-[#3d3630] transition-all duration-300 hover:scale-105 z-40 flex items-center gap-5 group"
         >
-          <div className="relative bg-emerald-500/20 p-3 rounded-full text-emerald-400">
-            <ShoppingBag className="w-6 h-6 stroke-1" />
-            <span className="absolute -top-1 -right-1 bg-emerald-500 text-black text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full">
+          <div className="relative bg-[#356b4f] p-3.5 rounded-full text-white">
+            <ShoppingBag className="w-6 h-6 stroke-2" />
+            <span className="absolute -top-1 -right-1 bg-[#a3543e] text-white text-[10px] font-bold w-6 h-6 flex items-center justify-center rounded-full border-2 border-[#28231f]">
               {cartItemCount}
             </span>
           </div>
-          <span className="font-light text-xl tracking-wide group-hover:text-emerald-400 transition-colors">
+          <span className="font-normal text-2xl tracking-tighter">
             ₹{(cartTotal / 100).toFixed(2)}
           </span>
         </button>
@@ -269,44 +274,44 @@ export default function MenuPage() {
       {isCartOpen && (
         <div className="fixed inset-0 z-50 flex justify-end">
           <div 
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            className="absolute inset-0 bg-[#28231f]/40 backdrop-blur-md"
             onClick={() => setIsCartOpen(false)}
           />
-          <div className="relative w-full max-w-md bg-[#0A0A0A] border-l border-white/10 shadow-2xl flex flex-col h-full animate-in slide-in-from-right duration-300 ease-out">
-            <div className="flex items-center justify-between p-6 md:p-8 border-b border-white/10">
-              <h2 className="text-3xl font-light text-white">Your Order</h2>
+          <div className="relative w-full max-w-md bg-[#fffaf3] border-l border-[#d9cbbd] shadow-2xl flex flex-col h-full animate-in slide-in-from-right duration-300 ease-out">
+            <div className="flex items-center justify-between p-8 border-b border-[#f3eadf]">
+              <h2 className="text-4xl font-normal tracking-tight text-[#28231f]">Order</h2>
               <button 
                 onClick={() => setIsCartOpen(false)} 
-                className="p-3 bg-white/5 hover:bg-white/10 rounded-full text-white/60 hover:text-white transition-colors"
+                className="p-3 hover:bg-[#f3eadf] rounded-full text-[#756b63] transition-colors"
               >
-                <X className="w-5 h-5" />
+                <X className="w-6 h-6" />
               </button>
             </div>
             
-            <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-6">
+            <div className="flex-1 overflow-y-auto p-8 space-y-8 custom-scrollbar">
               {activeCart.length === 0 ? (
-                <div className="text-center text-white/40 mt-12 text-lg font-light">Your cart is empty</div>
+                <div className="text-center text-[#9b8e83] mt-20 text-xl font-light italic">Your cart is empty</div>
               ) : (
                 <ul className="space-y-6">
                   {activeCart.map(item => (
-                    <li key={item.menuItemId} className="flex gap-4 p-4 rounded-2xl bg-white/5 border border-white/5">
+                    <li key={item.menuItemId} className="flex gap-5 p-6 rounded-3xl bg-white border border-[#f3eadf] shadow-sm">
                       <div className="flex-1">
-                        <h4 className="font-light text-lg text-white">{item.name}</h4>
-                        <div className="text-emerald-400/80 mt-1">₹{(item.priceCents / 100).toFixed(2)}</div>
+                        <h4 className="font-normal text-xl text-[#28231f] tracking-tight">{item.name}</h4>
+                        <div className="text-[#a3543e] mt-2 font-medium">₹{(item.priceCents / 100).toFixed(2)}</div>
                       </div>
-                      <div className="flex items-center gap-4 bg-black/50 rounded-full px-3 py-1 border border-white/5">
+                      <div className="flex items-center gap-4 bg-[#f3eadf] rounded-2xl px-4 py-2">
                         <button 
                           onClick={() => updateQuantity(item.menuItemId, -1)}
-                          className="text-white/60 hover:text-white transition-colors"
+                          className="text-[#756b63] hover:text-[#28231f] transition-colors"
                         >
-                          <Minus className="w-4 h-4" />
+                          <Minus className="w-4 h-4 stroke-2" />
                         </button>
-                        <span className="w-4 text-center font-medium text-white">{item.quantity}</span>
+                        <span className="w-6 text-center font-bold text-[#28231f]">{item.quantity}</span>
                         <button 
                           onClick={() => updateQuantity(item.menuItemId, 1)}
-                          className="text-white/60 hover:text-white transition-colors"
+                          className="text-[#756b63] hover:text-[#28231f] transition-colors"
                         >
-                          <Plus className="w-4 h-4" />
+                          <Plus className="w-4 h-4 stroke-2" />
                         </button>
                       </div>
                     </li>
@@ -315,18 +320,18 @@ export default function MenuPage() {
               )}
             </div>
 
-            <div className="p-6 md:p-8 border-t border-white/10 bg-black/40 backdrop-blur-md">
-              <div className="flex justify-between items-center mb-8">
-                <span className="text-white/50 text-sm uppercase tracking-widest font-semibold">Subtotal</span>
-                <span className="text-3xl font-light text-white">₹{(cartTotal / 100).toFixed(2)}</span>
+            <div className="p-8 border-t border-[#f3eadf] bg-[#fffaf3]">
+              <div className="flex justify-between items-center mb-10">
+                <span className="text-[10px] text-[#756b63] uppercase tracking-[0.2em] font-bold">Total Amount</span>
+                <span className="text-4xl font-normal text-[#28231f] tracking-tighter">₹{(cartTotal / 100).toFixed(2)}</span>
               </div>
-              <button
+              <Button
                 disabled={activeCart.length === 0 || placeOrder.isPending}
                 onClick={handleCheckout}
-                className="w-full bg-emerald-500 text-black py-4 rounded-full font-semibold hover:bg-emerald-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-lg"
+                className="w-full py-8 text-sm"
               >
-                {placeOrder.isPending ? 'Placing Order...' : 'Place Order'}
-              </button>
+                {placeOrder.isPending ? 'Placing Order...' : 'Confirm Order'}
+              </Button>
             </div>
           </div>
         </div>

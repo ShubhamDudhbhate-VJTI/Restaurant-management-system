@@ -23,15 +23,21 @@ export function useKitchenOrders() {
 
     socket.on(SocketEvents.ORDER_CREATED, handleUpdate);
     socket.on(SocketEvents.ORDER_STATUS_CHANGED, handleUpdate);
+    socket.on(SocketEvents.SESSION_UPDATED, handleUpdate);
     return () => {
       socket.off(SocketEvents.ORDER_CREATED, handleUpdate);
       socket.off(SocketEvents.ORDER_STATUS_CHANGED, handleUpdate);
+      socket.off(SocketEvents.SESSION_UPDATED, handleUpdate);
     };
   }, [queryClient]);
 
   const updateStatus = useMutation({
     mutationFn: async ({ orderId, status }: { orderId: string, status: OrderStatus }) => {
-      await apiClient.patch(`/orders/${orderId}/status`, { status });
+      if (status === 'cancelled') {
+        await apiClient.post(`/orders/${orderId}/cancel`);
+      } else {
+        await apiClient.patch(`/orders/${orderId}/status`, { status });
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['orders', 'active'] });

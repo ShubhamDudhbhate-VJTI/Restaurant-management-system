@@ -16,22 +16,29 @@ export const useTables = () => {
   useEffect(() => {
     socket.connect();
     
-    const handleUpdate = (payload: { table?: Table; deletedId?: string }) => {
+    const handleUpdate = (payload: any) => {
+      // Handle both { table } and direct Table objects for robustness
+      const tableUpdate = payload.table || (payload.id ? payload : null);
+      const deletedId = payload.deletedId;
+
       queryClient.setQueryData(['tables'], (oldData: { tables: Table[] } | undefined) => {
         if (!oldData) return oldData;
-        if (payload.deletedId) {
-          return { tables: oldData.tables.filter(t => t.id !== payload.deletedId) };
+        if (deletedId) {
+          return { tables: oldData.tables.filter(t => t.id !== deletedId) };
         }
-        if (payload.table) {
-          const exists = oldData.tables.find(t => t.id === payload.table!.id);
+        if (tableUpdate) {
+          const exists = oldData.tables.find(t => t.id === tableUpdate.id);
           if (exists) {
-            return { tables: oldData.tables.map(t => t.id === payload.table!.id ? payload.table! : t) };
+            return { tables: oldData.tables.map(t => t.id === tableUpdate.id ? tableUpdate : t) };
           } else {
-            return { tables: [...oldData.tables, payload.table!] };
+            return { tables: [...oldData.tables, tableUpdate] };
           }
         }
         return oldData;
       });
+
+      // Also invalidate to be safe
+      queryClient.invalidateQueries({ queryKey: ['tables'] });
     };
 
     socket.on(SocketEvents.TABLE_UPDATED, handleUpdate);

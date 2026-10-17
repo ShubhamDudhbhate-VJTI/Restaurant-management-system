@@ -2,15 +2,27 @@ import { useState } from 'react';
 import { useTables } from '../hooks/useTables';
 import { useAuth } from '../hooks/useAuth';
 import { useSession } from '../hooks/useSession';
+import { useOrders } from '../hooks/useOrders';
 import { useNavigate } from 'react-router-dom';
-import { TableStatus, Role } from '@/contracts';
+import { TableStatus, Role, OrderStatus } from '@/contracts';
 import { Camera } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { sessionsApi } from '../api/sessions';
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
 import { Skeleton } from '../components/ui/skeleton';
+import { Button } from '../components/ui/button';
 import QrScanner from '../components/QrScanner';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "../components/ui/alert-dialog";
 
 gsap.registerPlugin(useGSAP);
 
@@ -18,10 +30,12 @@ export default function TablesPage() {
   const { data, isLoading, error } = useTables();
   const { user } = useAuth();
   const { session } = useSession();
+  const { orders } = useOrders();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [scannerOpen, setScannerOpen] = useState(false);
   const [cancellationError, setCancellationError] = useState<string | null>(null);
+  const [showReleaseConfirm, setShowReleaseConfirm] = useState(false);
   const cancelSession = useMutation({
     mutationFn: sessionsApi.cancel,
     onSuccess: async () => {
@@ -80,61 +94,75 @@ export default function TablesPage() {
     }
 
     return (
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
         {tables.map(table => {
-          let statusColorOuter = "bg-[#e1eee2] ring-[#a9c9ad]";
-          let statusColorInner = "text-[#356b4f]";
+          let statusColorClasses = "bg-[#e1eee2] ring-[#a9c9ad] text-[#356b4f]";
           
           if (table.status === TableStatus.OCCUPIED) {
-            statusColorOuter = "bg-[#ece8e3] ring-[#c9c0b8]";
-            statusColorInner = "text-[#756b63]";
+            statusColorClasses = "bg-[#f3eadf] ring-[#d9cbbd] text-[#756b63]";
+          } else if (table.status === TableStatus.BILLING) {
+             statusColorClasses = "bg-[#f8f0e7] ring-[#d9c0a9] text-[#a3543e]";
           }
+
           const occupiedByMe = table.status === TableStatus.OCCUPIED && session?.tableId === table.id;
 
           return (
             <div key={table.id} className="stagger-item group">
-              <div className={`p-1.5 rounded-[1.5rem] ring-1 transition-transform duration-300 hover:scale-[1.03] ${statusColorOuter}`}>
-                <div className={`relative flex min-h-[230px] flex-col items-center justify-center overflow-hidden rounded-[calc(1.5rem-0.375rem)] bg-[#fffaf3] p-7 text-center shadow-[0_12px_30px_rgba(88,62,42,0.06)] ${occupiedByMe ? 'md:min-h-[270px]' : ''}`}>
-                  <h3 className="text-2xl font-normal text-[#28231f]">{table.name}</h3>
-                  <p className={`text-xs font-bold uppercase tracking-[0.2em] mt-2 ${statusColorInner}`}>{table.status}</p>
-                  <p className="mt-3 font-mono text-xs text-[#9b8e83]">{table.seats} Seats</p>
+              <div className={`p-1.5 rounded-[2rem] ring-1 transition-all duration-500 hover:scale-[1.02] hover:shadow-xl ${statusColorClasses.split(' ').slice(0, 2).join(' ')}`}>
+                <div className="relative flex min-h-[260px] flex-col items-center justify-center overflow-hidden rounded-[calc(2rem-0.375rem)] bg-[#fffaf3] p-8 text-center shadow-[0_12px_30px_rgba(88,62,42,0.04)]">
+                  <div className={`mb-6 inline-block rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-[0.2em] ${statusColorClasses.split(' ').slice(2).join(' ')} ring-1 ring-current/20`}>
+                    {table.status}
+                  </div>
                   
-                  {user?.role === Role.CUSTOMER && table.status === TableStatus.AVAILABLE && !session && (
-                    <button
-                      type="button"
-                      onClick={() => setScannerOpen(true)}
-                      className="mt-4 inline-flex w-full items-center justify-center gap-2 border-t border-white/10 pt-4 text-xs font-semibold uppercase tracking-widest text-emerald-400 hover:text-emerald-300"
-                    >
-                      <Camera className="h-3.5 w-3.5" />
-                      Scan QR to sit
-                    </button>
-                  )}
-                  {occupiedByMe && (
-                    <div className="mt-5 w-full border-t border-[#a9c9ad] pt-5">
-                      <p className="text-xs font-semibold uppercase tracking-widest text-[#356b4f]">Occupied by me</p>
-                      <button
-                        type="button"
-                        onClick={() => navigate('/menu')}
-                        className="mt-4 rounded-full bg-[#356b4f] px-5 py-2.5 text-xs font-semibold text-white transition-colors hover:bg-[#28573f]"
+                  <h3 className="text-4xl font-normal text-[#28231f] tracking-tight">{table.name}</h3>
+                  <div className="mt-1 flex flex-col items-center gap-1">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#9b8e83]">{table.seats} Seats Available</p>
+                    <p className="text-[9px] font-mono text-[#a3543e] opacity-60 bg-[#f3eadf] px-2 py-0.5 rounded border border-[#d9cbbd]/30">Token: {table.qrToken}</p>
+                  </div>
+
+                  <div className="mt-8 w-full border-t border-[#f3eadf] pt-6">
+                    {user?.role === Role.CUSTOMER && table.status === TableStatus.AVAILABLE && !session && (
+                      <Button
+                        onClick={() => setScannerOpen(true)}
+                        variant="outline"
+                        className="w-full rounded-xl border-[#d9cbbd] text-[#356b4f] hover:bg-[#e1eee2]"
                       >
-                        View menu
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setCancellationError(null);
-                          if (session) cancelSession.mutate(session.id);
-                        }}
-                        disabled={cancelSession.isPending}
-                        className="mt-4 block w-full text-xs font-semibold uppercase tracking-widest text-[#a3543e] transition-colors hover:text-[#7e3e2f] disabled:opacity-50"
-                      >
-                        {cancelSession.isPending ? 'Cancelling...' : 'Cancel table'}
-                      </button>
-                    </div>
-                  )}
-                  {table.status === TableStatus.OCCUPIED && !occupiedByMe && (
-                    <p className="mt-4 border-t border-[#d9cbbd] pt-4 text-xs font-semibold uppercase tracking-widest text-[#9b8e83]">Currently occupied</p>
-                  )}
+                        <Camera className="h-4 w-4" />
+                        Scan to sit
+                      </Button>
+                    )}
+
+                    {occupiedByMe && (
+                      <div className="space-y-3">
+                        <Button
+                          onClick={() => navigate('/menu')}
+                          className="w-full rounded-xl bg-[#356b4f] hover:bg-[#2a553f] text-white"
+                        >
+                          View Menu
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          onClick={() => {
+                            setCancellationError(null);
+                            const activeOrdersCount = orders?.filter(o => o.status !== OrderStatus.CANCELLED).length || 0;
+                            if (activeOrdersCount > 0) {
+                              navigate('/orders');
+                            } else if (session) {
+                              setShowReleaseConfirm(true);
+                            }
+                          }}
+                          disabled={cancelSession.isPending}
+                          className="w-full text-[10px] font-bold text-[#a3543e] hover:bg-[#f8e7e2]"
+                        >
+                          {cancelSession.isPending ? 'Releasing...' : 'Release Table'}
+                        </Button>
+                      </div>
+                    )}
+
+                    {table.status === TableStatus.OCCUPIED && !occupiedByMe && (
+                      <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#9b8e83] py-2 italic">Currently in use</p>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -173,8 +201,27 @@ export default function TablesPage() {
             </button>
           )}
           {user?.role === Role.CUSTOMER && session && (
-            <div className="rounded-2xl border border-[#a9c9ad] bg-[#e1eee2] px-4 py-3 text-sm text-[#356b4f]">
-              You are currently seated at table <strong>{session.tableId.slice(0, 8)}</strong>. You can cancel it before placing an order.
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 rounded-2xl border border-[#a9c9ad] bg-[#e1eee2] px-6 py-4 text-sm text-[#356b4f]">
+              <span>
+                You are currently seated at table <strong>{tables.find(t => t.id === session.tableId)?.name || session.tableId.slice(0, 8)}</strong>.
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setCancellationError(null);
+                  const activeOrdersCount = orders?.filter(o => o.status !== OrderStatus.CANCELLED).length || 0;
+                  if (activeOrdersCount > 0) {
+                    navigate('/orders');
+                  } else if (session) {
+                    setShowReleaseConfirm(true);
+                  }
+                }}
+                disabled={cancelSession.isPending}
+                className="border-[#356b4f] text-[#356b4f] hover:bg-[#356b4f] hover:text-white rounded-xl px-6"
+              >
+                {cancelSession.isPending ? 'Releasing...' : 'Release Table'}
+              </Button>
             </div>
           )}
         </header>
@@ -196,6 +243,26 @@ export default function TablesPage() {
           }}
         />
       )}
+
+      <AlertDialog open={showReleaseConfirm} onOpenChange={setShowReleaseConfirm}>
+        <AlertDialogContent className="bg-[#fffaf3] border-[#d9cbbd]">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-[#28231f]">Release Table?</AlertDialogTitle>
+            <AlertDialogDescription className="text-[#756b63]">
+              This will end your current session. You won't be able to add more items to your order.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="border-[#d9cbbd] text-[#28231f] hover:bg-[#f3eadf]">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => session && cancelSession.mutate(session.id)}
+              className="bg-[#a3543e] hover:bg-[#8a4634] text-white"
+            >
+              Release Table
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

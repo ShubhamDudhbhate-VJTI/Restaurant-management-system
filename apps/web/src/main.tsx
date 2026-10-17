@@ -12,6 +12,7 @@ import AdminMenuPage from './pages/admin/Menu';
 import ScanResultPage from './pages/ScanResult';
 import MenuPage from './pages/Menu';
 import OrdersPage from './pages/Orders';
+import HistoryPage from './pages/History';
 import KitchenPage from './pages/Kitchen';
 import CashierPage from './pages/Cashier';
 import ReservationsPage from './pages/Reservations';
@@ -70,6 +71,12 @@ createRoot(document.getElementById('root')!).render(
           <Route path="/orders" element={
             <ProtectedRoute>
               <OrdersPage />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/history" element={
+            <ProtectedRoute allowedRoles={[Role.CUSTOMER, Role.ADMIN]}>
+              <HistoryPage />
             </ProtectedRoute>
           } />
           
