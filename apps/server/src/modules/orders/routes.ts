@@ -3,9 +3,9 @@ import { authenticate, requireRole } from '../../middleware/auth';
 import { AppError } from '../../middleware/error';
 import { OrderStatus, SocketEvents, CreateOrderSchema, Role, UpdateOrderStatusSchema, canTransitionOrderStatus, PaySessionSchema, SessionCloseReason } from '@/contracts';
 import { orderRepository } from './repository';
+import { orderService } from './service';
 import { sessionRepository } from '../sessions/repository';
 import { computeBill } from '../billing';
-import { recordAudit } from '../audit/service';
 import { PaymentService } from '../payments/service';
 
 export const ordersRouter = Router();
@@ -135,7 +135,7 @@ ordersRouter.get('/', requireRole([Role.KITCHEN, Role.ADMIN, Role.WAITER]), asyn
 ordersRouter.patch('/:id/status', requireRole([Role.KITCHEN, Role.ADMIN, Role.WAITER, Role.RUNNER]), async (req, res, next) => {
   try {
     const data = UpdateOrderStatusSchema.parse(req.body);
-    const updated = await orderService.updateStatus(req.user!.userId, req.user!.role, req.params.id, data.status);
+    const updated = await orderService.updateStatus(req.user!.userId, req.user!.role, req.params.id as string, data.status);
     req.app.get('io')?.emit(SocketEvents.ORDER_STATUS_CHANGED, { orderId: updated.id, status: updated.status });
     res.json({ order: updated });
   } catch (err) {

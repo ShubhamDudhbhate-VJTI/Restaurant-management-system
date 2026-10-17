@@ -4,11 +4,9 @@ import {
   BarChart3,
   TrendingUp,
   ShoppingBag,
-  Users,
   Star,
   ArrowLeft,
   Calendar,
-  ChevronRight,
   Download,
   Flame,
   LayoutGrid

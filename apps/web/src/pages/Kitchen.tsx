@@ -3,7 +3,7 @@ import { useKitchenOrders } from '../hooks/useKitchenOrders';
 import { OrderStatus, type OrderWithItems } from '@/contracts';
 import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
-import { Clock, CheckCircle2, AlertCircle, Utensils, ChefHat, X, Timer, Flame, BellRing } from 'lucide-react';
+import { Clock, CheckCircle2, AlertCircle, Utensils, ChefHat, Timer, Flame, BellRing } from 'lucide-react';
 import { Skeleton } from '../components/ui/skeleton';
 import { cn } from '../lib/utils';
 import {

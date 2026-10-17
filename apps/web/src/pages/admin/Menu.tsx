@@ -4,10 +4,7 @@ import {
   Plus,
   Trash2,
   Utensils,
-  ChevronRight,
   AlertTriangle,
-  CheckCircle2,
-  X,
   PackagePlus,
   LayoutGrid
 } from 'lucide-react';

@@ -358,7 +358,6 @@ export default function OrdersPage() {
     );
   };
 
-  const activeCount = activeOrders.length;
 
   return (
     <div className="min-h-screen bg-[#f3eadf] text-[#28231f] font-sans pb-32">
@@ -589,7 +588,7 @@ export default function OrdersPage() {
             <div className="bg-[#f3eadf] rounded-2xl p-6 mb-8 border border-[#d9cbbd]">
               <div className="flex justify-between items-center mb-1">
                 <span className="text-[#756b63] text-xs uppercase tracking-widest font-bold">Total Amount</span>
-                <span className="text-[#356b4f] font-bold text-xl">₹{(bill?.totalCents / 100).toFixed(2)}</span>
+                <span className="text-[#356b4f] font-bold text-xl">₹{((bill?.totalCents ?? 0) / 100).toFixed(2)}</span>
               </div>
             </div>
 

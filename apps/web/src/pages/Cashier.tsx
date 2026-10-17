@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { useCashierSessions, CashierSession } from '../hooks/useCashierSessions';
 import { PaymentMethod, OrderWithItems, OrderStatus } from '@/contracts';
 import { Button } from '../components/ui/button';
-import { AlertCircle, IndianRupee, CreditCard, Smartphone, CheckCircle2, AlertTriangle, ChefHat, X } from 'lucide-react';
+import { IndianRupee, CreditCard, Smartphone, CheckCircle2, AlertTriangle, ChefHat, X } from 'lucide-react';
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
 import { Skeleton } from '../components/ui/skeleton';

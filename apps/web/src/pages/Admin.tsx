@@ -16,12 +16,8 @@ import {
   ClipboardList,
   Plus,
   AlertTriangle,
-  History,
   X,
-  Clock,
-  CheckCircle2,
-  LayoutGrid,
-  ArrowRight
+  Clock
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import gsap from 'gsap';
@@ -59,7 +55,6 @@ export default function AdminPage() {
     orders: OrderWithItems[],
     bill?: { totalCents: number }
   } | null>(null);
-  const [isLoadingOrders, setIsLoadingOrders] = useState(false);
 
   // AlertDialog states
   const [confirmDeleteTable, setConfirmDeleteTable] = useState<{ id: string, name: string } | null>(null);
@@ -68,8 +63,8 @@ export default function AdminPage() {
   const tables = data?.tables || [];
   const activeSessions = sessionsData?.sessions || [];
 
+
   const handleTableClick = async (tableName: string, sessionId: string) => {
-    setIsLoadingOrders(true);
     try {
       const orders = await getSessionOrders(sessionId);
       const session = activeSessions.find(s => s.id === sessionId);
@@ -80,8 +75,6 @@ export default function AdminPage() {
       });
     } catch (err) {
       console.error("Failed to fetch orders", err);
-    } finally {
-      setIsLoadingOrders(false);
     }
   };
 

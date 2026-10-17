@@ -25,7 +25,7 @@ sessionsRouter.get('/me', requireRole([Role.CUSTOMER]), async (req: Request, res
 // POST /sessions/:id/cancel
 sessionsRouter.post('/:id/cancel', requireRole([Role.CUSTOMER]), async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const updatedSession = await sessionService.cancelSession(req.user!.userId, req.params.id);
+    const updatedSession = await sessionService.cancelSession(req.user!.userId, req.params.id as string);
     req.app.get('io')?.emit(SocketEvents.SESSION_UPDATED, { sessionId: updatedSession.id, status: SessionStatus.CLOSED });
     res.json({ session: updatedSession });
   } catch (err) {
@@ -112,7 +112,7 @@ sessionsRouter.post('/:id/pay', requireRole([Role.CASHIER, Role.ADMIN]), async (
     const data = PaySessionSchema.parse(req.body);
     const updatedSession = await sessionService.closeSession(
       req.user!.userId,
-      req.params.id,
+      req.params.id as string,
       SessionCloseReason.PAID,
       data.method,
       data.discountPercent
@@ -135,7 +135,7 @@ sessionsRouter.post('/:id/force-close', requireRole([Role.CASHIER, Role.ADMIN]),
   try {
     const updatedSession = await sessionService.closeSession(
       req.user!.userId,
-      req.params.id,
+      req.params.id as string,
       SessionCloseReason.FORCE_CLOSED
     );
 

@@ -26,24 +26,24 @@
     --input: 30 15% 82%;
     --ring: 153 34% 31%;
     --radius: 1rem;
+
+    /* Status Colors */
+    --status-free-bg: 145 30% 91%;
+    --status-free-text: 153 34% 31%;
+    --status-held-bg: 35 25% 88%;
+    --status-held-text: 25 10% 45%;
+    --status-occupied-bg: 35 20% 85%;
+    --status-occupied-text: 25 10% 30%;
+
+    --status-placed-bg: 0 0% 93%;
+    --status-placed-text: 0 0% 30%;
+    --status-preparing-bg: 210 40% 93%;
+    --status-preparing-text: 215 50% 35%;
+    --status-ready-bg: 45 60% 92%;
+    --status-ready-text: 35 60% 30%;
+    --status-served-bg: 150 40% 92%;
+    --status-served-text: 153 40% 25%;
   }
-
-  /* Status Colors */
-  --status-free-bg: 145 30% 91%;
-  --status-free-text: 153 34% 31%;
-  --status-held-bg: 35 25% 88%;
-  --status-held-text: 25 10% 45%;
-  --status-occupied-bg: 35 20% 85%;
-  --status-occupied-text: 25 10% 30%;
-
-  --status-placed-bg: 0 0% 93%;
-  --status-placed-text: 0 0% 30%;
-  --status-preparing-bg: 210 40% 93%;
-  --status-preparing-text: 215 50% 35%;
-  --status-ready-bg: 45 60% 92%;
-  --status-ready-text: 35 60% 30%;
-  --status-served-bg: 150 40% 92%;
-  --status-served-text: 153 40% 25%;
 
   /* Shared light surface for operational pages. Keeps the existing page structure
      while normalizing legacy dark utility classes to the RMS paper palette. */

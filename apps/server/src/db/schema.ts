@@ -1,4 +1,5 @@
 import { pgTable, text, integer, boolean, timestamp, varchar } from 'drizzle-orm/pg-core';
+import { relations } from 'drizzle-orm';
 import { Role, TableStatus, SessionStatus, OrderStatus, SessionCloseReason, PaymentMethod, ReservationStatus } from '@/contracts';
 import { nanoid } from 'nanoid';
 
@@ -113,3 +114,106 @@ export const orderItems = pgTable('order_items', {
   priceCents: integer('price_cents').notNull(),
   quantity: integer('quantity').notNull().default(1),
 });
+
+// Relations
+export const usersRelations = relations(users, ({ many }) => ({
+  sessions: many(sessions),
+  orders: many(orders),
+  reservations: many(reservations),
+  feedback: many(feedback),
+  auditLogs: many(auditLogs),
+}));
+
+export const tablesRelations = relations(tables, ({ many }) => ({
+  sessions: many(sessions),
+  reservations: many(reservations),
+}));
+
+export const sessionsRelations = relations(sessions, ({ one, many }) => ({
+  table: one(tables, {
+    fields: [sessions.tableId],
+    references: [tables.id],
+  }),
+  customer: one(users, {
+    fields: [sessions.customerId],
+    references: [users.id],
+  }),
+  reservation: one(reservations, {
+    fields: [sessions.reservationId],
+    references: [reservations.id],
+  }),
+  orders: many(orders),
+  payments: many(payments),
+  feedback: many(feedback),
+}));
+
+export const paymentsRelations = relations(payments, ({ one }) => ({
+  session: one(sessions, {
+    fields: [payments.sessionId],
+    references: [sessions.id],
+  }),
+}));
+
+export const reservationsRelations = relations(reservations, ({ one }) => ({
+  customer: one(users, {
+    fields: [reservations.customerId],
+    references: [users.id],
+  }),
+  table: one(tables, {
+    fields: [reservations.tableId],
+    references: [tables.id],
+  }),
+}));
+
+export const feedbackRelations = relations(feedback, ({ one }) => ({
+  session: one(sessions, {
+    fields: [feedback.sessionId],
+    references: [sessions.id],
+  }),
+  customer: one(users, {
+    fields: [feedback.customerId],
+    references: [users.id],
+  }),
+}));
+
+export const auditLogsRelations = relations(auditLogs, ({ one }) => ({
+  actor: one(users, {
+    fields: [auditLogs.actorUserId],
+    references: [users.id],
+  }),
+}));
+
+export const categoriesRelations = relations(categories, ({ many }) => ({
+  menuItems: many(menuItems),
+}));
+
+export const menuItemsRelations = relations(menuItems, ({ one, many }) => ({
+  category: one(categories, {
+    fields: [menuItems.categoryId],
+    references: [categories.id],
+  }),
+  orderItems: many(orderItems),
+}));
+
+export const ordersRelations = relations(orders, ({ one, many }) => ({
+  session: one(sessions, {
+    fields: [orders.sessionId],
+    references: [sessions.id],
+  }),
+  customer: one(users, {
+    fields: [orders.customerId],
+    references: [users.id],
+  }),
+  items: many(orderItems),
+}));
+
+export const orderItemsRelations = relations(orderItems, ({ one }) => ({
+  order: one(orders, {
+    fields: [orderItems.orderId],
+    references: [orders.id],
+  }),
+  menuItem: one(menuItems, {
+    fields: [orderItems.menuItemId],
+    references: [menuItems.id],
+  }),
+}));

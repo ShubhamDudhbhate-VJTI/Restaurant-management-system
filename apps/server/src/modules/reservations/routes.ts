@@ -32,11 +32,11 @@ reservationsRouter.post('/', requireRole([Role.CUSTOMER]), async (req, res, next
 reservationsRouter.patch('/:id/status', requireRole([Role.ADMIN, Role.WAITER]), async (req, res, next) => {
   try {
     const data = UpdateReservationStatusSchema.parse(req.body);
-    const result = await reservationService.updateStatus(req.user!.userId, req.params.id, data.status);
+    const result = await reservationService.updateStatus(req.user!.userId, req.params.id as string, data.status);
 
     if (data.status === ReservationStatus.SEATED && result.session) {
       req.app.get('io')?.emit(SocketEvents.TABLE_UPDATED, {
-        tableId: result.reservation.tableId,
+        tableId: result.reservation?.tableId,
         status: TableStatus.OCCUPIED
       });
     }
