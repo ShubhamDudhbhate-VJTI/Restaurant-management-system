@@ -7,7 +7,7 @@ const httpServer = createServer(app);
 
 export const io = new Server(httpServer, {
   cors: {
-    origin: config.CLIENT_ORIGIN,
+    origin: [config.CLIENT_ORIGIN, 'http://localhost:5173', 'http://localhost:5174'],
     credentials: true,
   },
 });

@@ -14,13 +14,14 @@ import { feedbackRouter } from './modules/feedback/routes';
 import { staffRouter } from './modules/staff/routes';
 import { reportsRouter } from './modules/reports/routes';
 import { auditRouter } from './modules/audit/routes';
+import paymentRouter from './modules/payments/routes';
 
 export const app = express();
 
 app.use(express.json());
 app.use(cookieParser());
 app.use(cors({
-  origin: config.CLIENT_ORIGIN,
+  origin: [config.CLIENT_ORIGIN, 'http://localhost:5173', 'http://localhost:5174'],
   credentials: true,
 }));
 
@@ -39,6 +40,7 @@ app.use('/api/feedback', feedbackRouter);
 app.use('/api/staff', staffRouter);
 app.use('/api/reports', reportsRouter);
 app.use('/api/audit-logs', auditRouter);
+app.use('/api/payments', paymentRouter);
 
 // Error handling must be last
 app.use(errorHandler);
