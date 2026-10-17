@@ -113,35 +113,8 @@ ordersRouter.get('/history', async (req, res, next) => {
 // POST /orders/:id/cancel
 ordersRouter.post('/:id/cancel', async (req, res, next) => {
   try {
-    const orderId = req.params.id as string;
-    const order = await orderRepository.getOrderById(orderId);
-    if (!order) {
-      throw new AppError('NOT_FOUND', 404, 'Order not found');
-    }
-
-    // Role-based cancellation logic
-    const isCustomer = req.user!.role === Role.CUSTOMER;
-    const isKitchen = req.user!.role === Role.KITCHEN;
-    const isAdmin = req.user!.role === Role.ADMIN;
-
-    if (isCustomer) {
-      if (order.customerId !== req.user!.userId) {
-        throw new AppError('FORBIDDEN', 403, 'Cannot cancel another customer order');
-      }
-      if (order.status !== OrderStatus.PLACED) {
-        throw new AppError('CONFLICT', 409, 'Order is already being prepared and cannot be cancelled by customer');
-      }
-    } else if (isKitchen) {
-       if (order.status !== OrderStatus.PLACED && order.status !== OrderStatus.PREPARING) {
-         throw new AppError('CONFLICT', 409, 'Kitchen can only cancel orders that are placed or preparing');
-       }
-    } else if (!isAdmin) {
-      throw new AppError('FORBIDDEN', 403, 'Insufficient permissions to cancel order');
-    }
-
-    const updated = await orderRepository.cancelOrder(order.id);
-    await recordAudit({ actorUserId: req.user!.userId, action: 'ORDER_CANCELLED', entityType: 'ORDER', entityId: order.id });
-    req.app.get('io')?.emit(SocketEvents.ORDER_STATUS_CHANGED, { orderId: order.id, status: updated.status });
+    const updated = await orderService.cancelOrder(req.user!.userId, req.user!.role, req.params.id);
+    req.app.get('io')?.emit(SocketEvents.ORDER_STATUS_CHANGED, { orderId: updated.id, status: updated.status });
     res.json({ order: updated });
   } catch (err) {
     next(err);
@@ -162,28 +135,8 @@ ordersRouter.get('/', requireRole([Role.KITCHEN, Role.ADMIN, Role.WAITER]), asyn
 ordersRouter.patch('/:id/status', requireRole([Role.KITCHEN, Role.ADMIN, Role.WAITER, Role.RUNNER]), async (req, res, next) => {
   try {
     const data = UpdateOrderStatusSchema.parse(req.body);
-    const orderId = req.params.id as string;
-    const order = await orderRepository.getOrderById(orderId);
-    if (!order) {
-      throw new AppError('NOT_FOUND', 404, 'Order not found');
-    }
-
-    if (!canTransitionOrderStatus(order.status, data.status)) {
-      throw new AppError('CONFLICT', 409, `Invalid status transition from ${order.status} to ${data.status}`);
-    }
-
-    // Role-based restrictions on transitions
-    if (data.status === OrderStatus.SERVED && ![Role.WAITER, Role.RUNNER, Role.ADMIN, Role.KITCHEN].includes(req.user!.role)) {
-      throw new AppError('FORBIDDEN', 403, 'Only staff can mark orders as served');
-    }
-
-    if ([OrderStatus.PREPARING, OrderStatus.READY].includes(data.status) && ![Role.KITCHEN, Role.ADMIN].includes(req.user!.role)) {
-      throw new AppError('FORBIDDEN', 403, 'Only kitchen staff can update preparation status');
-    }
-
-    const updated = await orderRepository.updateOrderStatus(order.id, data.status);
-    await recordAudit({ actorUserId: req.user!.userId, action: 'ORDER_STATUS_CHANGED', entityType: 'ORDER', entityId: order.id, metadata: { status: data.status } });
-    req.app.get('io')?.emit(SocketEvents.ORDER_STATUS_CHANGED, { orderId: order.id, status: updated.status });
+    const updated = await orderService.updateStatus(req.user!.userId, req.user!.role, req.params.id, data.status);
+    req.app.get('io')?.emit(SocketEvents.ORDER_STATUS_CHANGED, { orderId: updated.id, status: updated.status });
     res.json({ order: updated });
   } catch (err) {
     next(err);
