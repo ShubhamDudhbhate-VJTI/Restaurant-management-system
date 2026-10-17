@@ -20,7 +20,7 @@ The product presents one shared operational flow for every table, so customer, w
 
 ## Operating Context
 
-The system runs as a React/Vite frontend over an Express API with SQLite and Drizzle ORM. Socket.IO supports live order and table updates. Staff authenticate with role-based access, while customers use a lightweight authenticated account flow.
+The system runs as a React/Vite frontend over an Express API with Supabase PostgreSQL and Drizzle ORM. Socket.IO supports live order and table updates. Staff authenticate with role-based access, while customers use a lightweight authenticated account flow.
 
 ## Capabilities and Constraints
 

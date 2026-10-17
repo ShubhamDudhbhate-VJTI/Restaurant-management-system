@@ -1,15 +1,17 @@
 # Restaurant Management System (RMS)
 
-A modern, fast, and accessible Restaurant Management System built with a monorepo setup (Turborepo), Express (Server), and React (Web client). The application uses the Ethereal Glass dark aesthetic.
+A modern, fast, and accessible Restaurant Management System built with a monorepo setup (Turborepo), Express (Server), and React (Web client). The application uses a minimalist editorial UI with a paper-based palette (#f3eadf background).
 
 ## Tech Stack
-- **Frontend**: React, Vite, GSAP (animations), Tailwind CSS, React Query
-- **Backend**: Express, Drizzle ORM, SQLite
+- **Frontend**: React, Vite, Tailwind CSS, React Query
+- **Backend**: Express, Drizzle ORM, Supabase (PostgreSQL)
 - **Shared**: Zod for validation schemas
+- **Testing**: Vitest
 
 ## Prerequisites
 - Node.js (v18 or higher)
 - npm
+- Supabase instance (PostgreSQL)
 
 ## Setup & Run Instructions
 
@@ -19,15 +21,24 @@ A modern, fast, and accessible Restaurant Management System built with a monorep
    npm install
    ```
 
-2. **Database Setup**
-   Push the schema to the SQLite database and seed initial data:
+2. **Environment Configuration**
+   Create a `.env` file in `apps/server` with:
+   ```
+   DATABASE_URL=postgres://postgres:[PASSWORD]@[HOST]:6543/postgres?pgbouncer=true
+   JWT_SECRET=your_secret
+   PORT=3000
+   ```
+
+3. **Database Setup**
+   Push the schema to the Supabase database:
    ```bash
+   cd apps/server
    npm run db:push
    npm run db:seed
    ```
 
-3. **Start the Development Servers**
-   Run both the frontend and backend servers concurrently:
+4. **Start the Development Servers**
+   Run both the frontend and backend servers concurrently from the root:
    ```bash
    npm run dev
    ```
