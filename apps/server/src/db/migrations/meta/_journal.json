@@ -1,89 +1,19 @@
 {
   "version": "7",
-  "dialect": "sqlite",
+  "dialect": "postgresql",
   "entries": [
     {
       "idx": 0,
-      "version": "6",
-      "when": 1791399137985,
-      "tag": "0000_blue_champions",
+      "version": "7",
+      "when": 1792218914875,
+      "tag": "0000_keen_major_mapleleaf",
       "breakpoints": true
     },
     {
       "idx": 1,
-      "version": "6",
-      "when": 1791399669247,
-      "tag": "0001_futuristic_flatman",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "6",
-      "when": 1791400132635,
-      "tag": "0002_wakeful_living_mummy",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "6",
-      "when": 1791400766386,
-      "tag": "0003_youthful_doctor_doom",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "6",
-      "when": 1791458587644,
-      "tag": "0004_flat_iceman",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
       "version": "7",
-      "when": 1791460000000,
-      "tag": "0005_reservations",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "7",
-      "when": 1791460001000,
-      "tag": "0006_simplify_table_status",
-      "breakpoints": true
-    },
-    {
-      "idx": 7,
-      "version": "7",
-      "when": 1791460002000,
-      "tag": "0007_feedback",
-      "breakpoints": true
-    },
-    {
-      "idx": 8,
-      "version": "7",
-      "when": 1791460003000,
-      "tag": "0008_session_discount_cents",
-      "breakpoints": true
-    },
-    {
-      "idx": 9,
-      "version": "7",
-      "when": 1791460004000,
-      "tag": "0009_session_discount_percent",
-      "breakpoints": true
-    },
-    {
-      "idx": 10,
-      "version": "7",
-      "when": 1791460005000,
-      "tag": "0010_user_active",
-      "breakpoints": true
-    },
-    {
-      "idx": 11,
-      "version": "7",
-      "when": 1791460006000,
-      "tag": "0011_audit_logs",
+      "when": 1792219361504,
+      "tag": "0001_concerned_kinsey_walden",
       "breakpoints": true
     }
   ]
