@@ -124,6 +124,13 @@ export const inventory = pgTable('inventory', {
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });
 
+export const menuItemIngredients = pgTable('menu_item_ingredients', {
+  id: text('id').$defaultFn(() => nanoid()).primaryKey(),
+  menuItemId: text('menu_item_id').notNull().references(() => menuItems.id, { onDelete: 'cascade' }),
+  inventoryId: text('inventory_id').notNull().references(() => inventory.id, { onDelete: 'cascade' }),
+  quantityNeeded: integer('quantity_needed').notNull(), // Quantity needed for 1 unit of menu item
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   sessions: many(sessions),

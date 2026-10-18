@@ -43,6 +43,7 @@ export const useAuth = () => {
     mutationFn: authApi.logout,
     onSuccess: () => {
       queryClient.setQueryData(['me'], null);
+      queryClient.clear(); // Clear all cache to prevent data leakage between sessions
       socket.disconnect();
     },
   });
