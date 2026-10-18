@@ -52,7 +52,8 @@ export const SocketEvents = {
   SESSION_UPDATED: 'session:updated',
   ORDER_CREATED: 'order:created',
   ORDER_STATUS_CHANGED: 'order:status_changed',
-  MENU_UPDATED: 'menu:updated'
+  MENU_UPDATED: 'menu:updated',
+  INVENTORY_UPDATED: 'inventory:updated'
 } as const;
 
 import { z } from 'zod';

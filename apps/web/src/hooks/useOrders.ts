@@ -66,7 +66,7 @@ export function useOrders() {
       }
       return { previousOrders };
     },
-    onError: (err, orderId, context) => {
+    onError: (_err, _orderId, context) => {
       if (context?.previousOrders) {
         queryClient.setQueryData(['orders', 'me'], context.previousOrders);
       }

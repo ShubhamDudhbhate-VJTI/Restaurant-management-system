@@ -417,7 +417,6 @@ export default function OrdersPage() {
     );
   };
 
-
   return (
     <div className="min-h-screen bg-[#f3eadf] text-[#28231f] font-sans pb-32">
       <div className="mx-auto max-w-4xl px-4 pt-10 sm:px-6 lg:px-8">
@@ -476,7 +475,7 @@ export default function OrdersPage() {
                   </div>
                   <div className="flex justify-between items-center pt-4 border-t border-zinc-100">
                     <span className="text-lg font-bold">Total Amount</span>
-                    <span className="text-2xl font-bold text-[#356b4f]">₹{(bill.totalCents / 100).toFixed(2)}</span>
+                    <span className="text-2xl font-bold text-[#356b4f]">₹{((bill?.totalCents ?? 0) / 100).toFixed(2)}</span>
                   </div>
                 </CardContent>
               </Card>
