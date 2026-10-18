@@ -115,6 +115,15 @@ export const orderItems = pgTable('order_items', {
   quantity: integer('quantity').notNull().default(1),
 });
 
+export const inventory = pgTable('inventory', {
+  id: text('id').$defaultFn(() => nanoid()).primaryKey(),
+  name: text('name').notNull(),
+  quantity: integer('quantity').notNull().default(0), // Multiplied by 100 for decimals if needed, but user said KG/No.
+  unit: varchar('unit', { length: 20 }).notNull(), // 'KG', 'GRAM', 'PIECE', 'LITER', etc.
+  minStockLevel: integer('min_stock_level').notNull().default(0),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   sessions: many(sessions),
