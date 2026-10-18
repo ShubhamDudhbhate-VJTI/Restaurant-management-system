@@ -1,6 +1,6 @@
 import { db } from '../../db/client';
 import { inventory } from '../../db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { type Inventory, type CreateInventoryInput, type UpdateInventoryInput } from '@/contracts';
 
 export const inventoryRepository = {
@@ -55,7 +55,7 @@ export const inventoryRepository = {
   async adjustQuantity(id: string, adjustment: number): Promise<Inventory> {
     const [item] = await db.update(inventory)
       .set({
-        quantity: db.raw(`quantity + ${adjustment}`),
+        quantity: sql`${inventory.quantity} + ${adjustment}`,
         updatedAt: new Date()
       })
       .where(eq(inventory.id, id))

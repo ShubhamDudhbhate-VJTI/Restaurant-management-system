@@ -33,12 +33,12 @@ export function useOrders() {
 
     socket.on(SocketEvents.ORDER_CREATED, handleUpdate);
     socket.on(SocketEvents.ORDER_STATUS_CHANGED, handleUpdate);
-    socket.on('session:updated', handleUpdate);
+    socket.on(SocketEvents.SESSION_UPDATED, handleUpdate);
 
     return () => {
       socket.off(SocketEvents.ORDER_CREATED, handleUpdate);
       socket.off(SocketEvents.ORDER_STATUS_CHANGED, handleUpdate);
-      socket.off('session:updated', handleUpdate);
+      socket.off(SocketEvents.SESSION_UPDATED, handleUpdate);
     };
   }, [queryClient]);
 

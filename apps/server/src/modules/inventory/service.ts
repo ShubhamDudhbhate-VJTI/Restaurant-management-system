@@ -1,13 +1,19 @@
 import { inventoryRepository } from './repository';
 import { recordAudit } from '../audit/service';
 import { AppError } from '../../middleware/error';
+import { io } from '../../index';
 import {
   type CreateInventoryInput,
   type UpdateInventoryInput,
-  type AdjustInventoryInput
+  type AdjustInventoryInput,
+  SocketEvents
 } from '@/contracts';
 
 export class InventoryService {
+  private emitUpdate() {
+    io.emit(SocketEvents.INVENTORY_UPDATED);
+  }
+
   async getAllItems() {
     return inventoryRepository.findAll();
   }
@@ -27,6 +33,7 @@ export class InventoryService {
       entityId: item.id,
       metadata: { name: item.name, quantity: item.quantity, unit: item.unit }
     });
+    this.emitUpdate();
     return item;
   }
 
@@ -42,6 +49,7 @@ export class InventoryService {
       entityId: item.id,
       metadata: { changes: data }
     });
+    this.emitUpdate();
     return item;
   }
 
@@ -57,6 +65,7 @@ export class InventoryService {
       entityId: id,
       metadata: { name: existing.name }
     });
+    this.emitUpdate();
   }
 
   async adjustStock(userId: string, id: string, data: AdjustInventoryInput) {
@@ -76,6 +85,7 @@ export class InventoryService {
         notes: data.notes
       }
     });
+    this.emitUpdate();
     return item;
   }
 }
