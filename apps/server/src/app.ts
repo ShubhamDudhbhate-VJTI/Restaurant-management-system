@@ -20,29 +20,16 @@ import { inventoryRouter } from './modules/inventory/routes';
 
 export const app = express();
 
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  limit: 100,
-  standardHeaders: 'draft-7',
-  legacyHeaders: false,
-  skip: (req) => process.env.NODE_ENV === 'test',
-});
-
-app.use(limiter);
-
 const allowedOrigins = [
   ...(config.CLIENT_ORIGIN ? config.CLIENT_ORIGIN.split(',').map(o => o.trim()) : []),
   'http://localhost:5173',
   'http://localhost:5174'
 ];
 
-app.use(express.json());
-app.use(cookieParser());
+// 1. CORS must be first to ensure all responses (including errors) have headers
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow requests with no origin (like mobile apps or curl)
     if (!origin) return callback(null, true);
-
     if (allowedOrigins.indexOf(origin) !== -1 || origin.endsWith('.vercel.app')) {
       callback(null, true);
     } else {
@@ -51,6 +38,19 @@ app.use(cors({
   },
   credentials: true,
 }));
+
+// 2. Increased rate limit for dashboard stability
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 500, // Raised from 100 to 500
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  skip: (req) => process.env.NODE_ENV === 'test',
+});
+
+app.use(limiter);
+app.use(express.json());
+app.use(cookieParser());
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok' });
