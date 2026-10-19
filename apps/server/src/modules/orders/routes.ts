@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { authenticate, requireRole } from '../../middleware/auth';
 import { AppError } from '../../middleware/error';
-import { OrderStatus, SocketEvents, CreateOrderSchema, Role, UpdateOrderStatusSchema, canTransitionOrderStatus, PaySessionSchema, SessionCloseReason } from '@/contracts';
+import { OrderStatus, SocketEvents, CreateOrderSchema, Role, UpdateOrderStatusSchema, canTransitionOrderStatus, PaySessionSchema, SessionCloseReason, SessionStatus } from '@/contracts';
 import { orderRepository } from './repository';
 import { orderService } from './service';
 import { sessionRepository } from '../sessions/repository';
@@ -54,12 +54,20 @@ ordersRouter.post('/me/pay', async (req, res, next) => {
 ordersRouter.post('/', async (req, res, next) => {
   try {
     const data = CreateOrderSchema.parse(req.body);
-    const activeSession = req.user!.role === Role.WAITER && data.sessionId
+
+    // Staff roles can place orders for any active session by providing sessionId
+    const isStaff = [Role.WAITER, Role.CASHIER, Role.ADMIN].includes(req.user!.role);
+
+    const activeSession = (isStaff && data.sessionId)
       ? await sessionRepository.getById(data.sessionId)
       : await sessionRepository.findActiveByCustomerId(req.user!.userId);
     
-    if (!activeSession || activeSession.status !== 'active') {
+    if (!activeSession) {
       throw new AppError('FORBIDDEN', 403, 'NO_ACTIVE_SESSION');
+    }
+
+    if (activeSession.status !== SessionStatus.ACTIVE) {
+      throw new AppError('FORBIDDEN', 403, 'SESSION_CLOSED');
     }
 
     try {
