@@ -28,7 +28,11 @@ authRouter.post('/login', validate(LoginSchema), async (req, res, next) => {
 });
 
 authRouter.post('/logout', (req, res) => {
-  res.clearCookie('token');
+  res.clearCookie('token', {
+    httpOnly: true,
+    secure: true,
+    sameSite: 'none',
+  });
   res.json({ success: true });
 });
 
