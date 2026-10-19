@@ -107,6 +107,7 @@ createRoot(document.getElementById('root')!).render(
 
         </Routes>
       </BrowserRouter>
+      </ToastProvider>
     </QueryClientProvider>
   </StrictMode>,
 )
