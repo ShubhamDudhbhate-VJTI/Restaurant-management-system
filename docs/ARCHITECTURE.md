@@ -9,21 +9,21 @@ Use stable versions at project setup and pin them in `package.json`.
 | Area             | Choice                                                                       |
 | ---------------- | ---------------------------------------------------------------------------- |
 | Language         | TypeScript (strict) everywhere                                               |
-| Database         | SQLite                                                                       |
+| Database         | PostgreSQL                                                                   |
 | ORM / migrations | Drizzle ORM + drizzle-kit                                                    |
 | Backend          | Node.js + Express                                                            |
 | Validation       | Zod                                                                          |
-| Auth             | Email + password hashed with argon2 (or bcryptjs), JWT in an httpOnly cookie |
+| Auth             | Email + password hashed with argon2, JWT in an httpOnly cookie               |
 | Real-time        | Socket.IO                                                                    |
 | Frontend         | React + Vite                                                                 |
 | Routing / data   | React Router, TanStack Query                                                 |
 | Styling          | Tailwind CSS + shadcn/ui                                                     |
 | Animation        | GSAP, used sparingly                                                         |
 | UI design rules  | `design/taste-skill.md`                                                      |
-| QR codes         | `qrcode` package (server-side generation)                                    |
-| Tooling          | npm workspaces, ESLint, Prettier, `tsx` for dev, Vitest for tests            |
+| QR codes         | `nanoid` based static tokens                                                 |
+| Tooling          | npm workspaces, ESLint, oxlint, `tsx` for dev, Vitest for tests              |
 
-The project documentation previously described PERN while the implementation used SQLite. The final project uses PostgreSQL so the architecture matches the stated PERN stack.
+The final project uses PostgreSQL so the architecture matches the stated PERN stack.
 
 ## 2. Config
 
@@ -187,41 +187,41 @@ Base path `/api`, JSON in/out, auth via cookie.
 
 | Method | Path           | Role   | Notes            |
 | ------ | -------------- | ------ | ---------------- |
-| POST   | `/auth/signup` | public | creates customer |
-| POST   | `/auth/login`  | public | sets cookie      |
-| POST   | `/auth/logout` | any    | clears cookie    |
-| GET    | `/auth/me`     | any    | current user     |
+| POST   | `/api/auth/signup` | public | creates customer |
+| POST   | `/api/auth/login`  | public | sets cookie      |
+| POST   | `/api/auth/logout` | any    | clears cookie    |
+| GET    | `/api/auth/me`     | any    | current user     |
 
 ### Tables
 
 | Method | Path             | Role          | Notes                     |
 | ------ | ---------------- | ------------- | ------------------------- |
-| GET    | `/tables`        | authenticated | current table status      |
-| POST   | `/tables`        | admin         | create table and QR token |
-| PATCH  | `/tables/:id`    | admin         | edit table                |
-| DELETE | `/tables/:id`    | admin         | delete if safe            |
-| GET    | `/tables/:id/qr` | admin         | PNG/SVG QR                |
+| GET    | `/api/tables`        | authenticated | current table status      |
+| POST   | `/api/tables`        | admin         | create table and QR token |
+| PATCH  | `/api/tables/:id`    | admin         | edit table                |
+| DELETE | `/api/tables/:id`    | admin         | delete if safe            |
+| GET    | `/api/tables/:id/qr` | admin         | PNG/SVG QR                |
 
 ### Reservations
 
 | Method | Path                       | Role           | Notes                           |
 | ------ | -------------------------- | -------------- | ------------------------------- |
-| GET    | `/reservations`            | admin, cashier | list reservations               |
-| GET    | `/reservations/me`         | customer       | own reservations                |
-| POST   | `/reservations`            | customer       | create reservation              |
-| PATCH  | `/reservations/:id/status` | admin          | confirm/cancel/complete/seated  |
-| DELETE | `/reservations/:id`        | customer       | cancel own eligible reservation |
+| GET    | `/api/reservations`            | admin, cashier | list reservations               |
+| GET    | `/api/reservations/me`         | customer       | own reservations                |
+| POST   | `/api/reservations`            | customer       | create reservation              |
+| PATCH  | `/api/reservations/:id/status` | admin          | confirm/cancel/complete/seated  |
+| DELETE | `/api/reservations/:id`        | customer       | cancel own eligible reservation |
 
 ### Scan / Sessions
 
 | Method | Path                        | Role           | Notes                          |
 | ------ | --------------------------- | -------------- | ------------------------------ |
-| GET    | `/t/:qrToken`               | customer       | returns table information      |
-| POST   | `/t/:qrToken/seat`          | customer       | seats customer at a free table |
-| GET    | `/sessions/me`              | customer       | own active session             |
-| GET    | `/sessions`                 | cashier, admin | active sessions                |
-| POST   | `/sessions/:id/pay`         | cashier, admin | close paid session             |
-| POST   | `/sessions/:id/force-close` | cashier, admin | close abandoned session        |
+| GET    | `/api/t/:qrToken`               | customer       | returns table information      |
+| POST   | `/api/t/:qrToken/seat`          | customer       | seats customer at a free table |
+| GET    | `/api/sessions/me`              | customer       | own active session             |
+| GET    | `/api/sessions`                 | cashier, admin | active sessions                |
+| POST   | `/api/payments/pay/:sessionId`  | cashier, admin | close paid session             |
+| POST   | `/api/sessions/:id/force-close` | cashier, admin | close abandoned session        |
 
 A table can be seated through its QR code or through a waiter-created session for a walk-in customer.
 
@@ -229,25 +229,25 @@ A table can be seated through its QR code or through a waiter-created session fo
 
 | Method            | Path                               | Role          |
 | ----------------- | ---------------------------------- | ------------- |
-| GET               | `/menu`                            | authenticated |
-| POST/PATCH/DELETE | `/menu/categories` / `/menu/items` | admin         |
-| PATCH             | `/menu/items/:id/availability`     | admin         |
+| GET               | `/api/menu`                            | authenticated |
+| POST/PATCH/DELETE | `/api/menu/categories` / `/api/menu/items` | admin         |
+| PATCH             | `/api/menu/items/:id/availability`     | admin         |
 
 ### Orders
 
 | Method | Path                 | Role                            | Notes                                  |
 | ------ | -------------------- | ------------------------------- | -------------------------------------- |
-| POST   | `/orders`            | customer, waiter                | creates an order for an active session |
-| GET    | `/orders/me`         | customer                        | own session orders                     |
-| GET    | `/orders`            | kitchen, cashier, admin, waiter | relevant active orders                 |
-| POST   | `/orders/:id/cancel` | customer owner, admin           | only while placed                      |
-| PATCH  | `/orders/:id/status` | kitchen, admin                  | validated state transition             |
+| POST   | `/api/orders`            | customer, waiter                | creates an order for an active session |
+| GET    | `/api/orders/me`         | customer                        | own session orders                     |
+| GET    | `/api/orders`            | kitchen, cashier, admin, waiter | relevant active orders                 |
+| POST   | `/api/orders/:id/cancel` | customer owner, admin           | only while placed                      |
+| PATCH  | `/api/orders/:id/status` | kitchen, admin                  | validated state transition             |
 
 ### Billing / Payments
 
-`GET /sessions/:id/bill` for cashier/admin and customer-owned active session.
+`GET /api/sessions/:id/bill` for cashier/admin and customer-owned active session.
 
-`POST /sessions/:id/pay` records the payment and closes the session in one transaction.
+`POST /api/payments/pay/:sessionId` records the payment and closes the session in one transaction.
 
 Discount is part of the MVP and must be included in bill calculation.
 
@@ -255,25 +255,25 @@ Discount is part of the MVP and must be included in bill calculation.
 
 | Method | Path        | Role     |
 | ------ | ----------- | -------- |
-| POST   | `/feedback` | customer |
-| GET    | `/feedback` | admin    |
+| POST   | `/api/feedback` | customer |
+| GET    | `/api/feedback` | admin    |
 
 ### Reports
 
 | Method | Path                            | Role  |
 | ------ | ------------------------------- | ----- |
-| GET    | `/reports/sales?period=daily`   | admin |
-| GET    | `/reports/sales?period=weekly`  | admin |
-| GET    | `/reports/sales?period=monthly` | admin |
-| GET    | `/reports/top-items`            | admin |
+| GET    | `/api/reports/sales?period=daily`   | admin |
+| GET    | `/api/reports/sales?period=weekly`  | admin |
+| GET    | `/api/reports/sales?period=monthly` | admin |
+| GET    | `/api/reports/top-items`            | admin |
 
 ### Staff
 
 | Method | Path         | Role  |
 | ------ | ------------ | ----- |
-| GET    | `/staff`     | admin |
-| POST   | `/staff`     | admin |
-| PATCH  | `/staff/:id` | admin |
+| GET    | `/api/staff`     | admin |
+| POST   | `/api/staff`     | admin |
+| PATCH  | `/api/staff/:id` | admin |
 
 No inventory endpoints, AI endpoints or queue endpoints are part of the MVP.
 

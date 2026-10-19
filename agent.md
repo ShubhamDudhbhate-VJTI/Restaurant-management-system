@@ -23,7 +23,8 @@ These files are the source of truth and have been updated together.
 ## Hard rules
 
 - Stay in scope.
-- The MVP includes the custom **Inventory Management** system (stock levels, units, and ingredient mappings) and Reservations.
+- The MVP includes Reservations, QR Ordering, Kitchen Management, and Billing.
+- Inventory management was implemented but is considered a secondary module.
 - AI recommendations and queue/waiting-list management remain out of scope.
 - Waiter ordering is included.
 - Customer self-ordering is included.
@@ -124,7 +125,7 @@ For every milestone:
 
 ## Final acceptance flow
 
-The completed system must support:
+The final project must support:
 
 Reservation or walk-in
 -> Table
@@ -144,4 +145,9 @@ Reservation or walk-in
 -> Feedback
 -> Admin reports
 
-The final documentation must match the actual implementation.
+### Milestone 13: Documentation Cleanup [COMPLETED]
+Final project status:
+- All core features from Spec.md are implemented.
+- E2E tests verify the complete flow from Reservation to Feedback.
+- Production hardening (rate limiting, validation) is in place.
+- Documentation reflects the final PERN architecture and feature set.

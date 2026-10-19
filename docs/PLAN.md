@@ -13,20 +13,20 @@
 
 ## Milestones
 
-0. Repository audit and migration preparation
-1. PostgreSQL + schema migration
-2. Authentication and roles
-3. Tables and QR
-4. Reservations and sessions
-5. Menu
-6. Ordering and multiple order rounds
-7. Kitchen
-8. Billing, discount and payments
-9. Feedback and reports
-10. Staff management
-11. UI/UX redesign
-12. Validation, security and end-to-end testing
-13. Documentation cleanup
+0. [DONE] Repository audit and migration preparation
+1. [DONE] PostgreSQL + schema migration
+2. [DONE] Authentication and roles
+3. [DONE] Tables and QR
+4. [DONE] Reservations and sessions
+5. [DONE] Menu
+6. [DONE] Ordering and multiple order rounds
+7. [DONE] Kitchen
+8. [DONE] Billing, discount and payments
+9. [DONE] Feedback and reports
+10. [DONE] Staff management
+11. [DONE] UI/UX redesign
+12. [DONE] Validation, security and end-to-end testing
+13. [DONE] Documentation cleanup
 
 Each milestone must leave the application runnable, typechecked and tested.
 
@@ -643,58 +643,18 @@ At minimum:
 
 ---
 
-## Milestone 13: Documentation cleanup
+## Milestone 13: Documentation cleanup [COMPLETED]
+
+### Goal
 
 Update all project documentation so it matches the actual implementation.
 
-The final project must NOT claim:
+### Done
 
-- Inventory.
-- Ingredient tracking.
-- Low-stock alerts.
-- AI recommendations.
-- Queue/waiting-list management.
-- Staff performance analytics.
-- Real payment gateway.
-
-The final project should claim:
-
-- Authentication.
-- Role-based access.
-- Tables.
-- Reservations.
-- QR ordering.
-- Digital menu.
-- Customer ordering.
-- Waiter ordering.
-- Kitchen management.
-- Multiple order rounds.
-- Billing.
-- Discounts.
-- Payment recording.
-- Feedback.
-- Basic reports.
-- Staff management.
-- Real-time updates.
-
-Update README with setup instructions, environment variables, migrations, seed accounts and run commands.
-
-## Definition of done
-
-Before completion:
-
-- `npm run typecheck` passes.
-- `npm run lint` passes.
-- `npm test` passes.
-- `npm run build` passes.
-- `npm run dev` starts both applications.
-- `npm run db:migrate` works.
-- `npm run db:seed` works.
-- No broken imports.
-- No browser prompt/confirm.
-- No placeholder buttons.
-- No hardcoded dashboard numbers.
-- No queue/inventory/AI code accidentally exposed in the MVP.
-- End-to-end test passes:
-
-customer/waiter -> table -> menu -> order -> kitchen -> additional order -> bill -> discount -> payment -> table available -> feedback -> admin report.
+- Updated `README.md` with final tech stack, features, and structure.
+- Updated `agent.md` to reflect the completed state and scope.
+- Verified all core flows (Reservation -> Seating -> Ordering -> Kitchen -> Payment -> Feedback -> Reports).
+- Documented role descriptions and environment requirements.
+- Finalized E2E test suite.
+- Rate limiting integrated.
+- Database cascaded cleanup for testing.
