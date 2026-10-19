@@ -20,10 +20,25 @@ import { inventoryRouter } from './modules/inventory/routes';
 export const app = express();
 
 
+const allowedOrigins = [
+  ...(config.CLIENT_ORIGIN ? config.CLIENT_ORIGIN.split(',').map(o => o.trim()) : []),
+  'http://localhost:5173',
+  'http://localhost:5174'
+];
+
 app.use(express.json());
 app.use(cookieParser());
 app.use(cors({
-  origin: [config.CLIENT_ORIGIN, 'http://localhost:5173', 'http://localhost:5174'],
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps or curl)
+    if (!origin) return callback(null, true);
+
+    if (allowedOrigins.indexOf(origin) !== -1 || origin.endsWith('.vercel.app')) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
 }));
 
