@@ -28,18 +28,19 @@ export function useCashierSessions() {
   };
 
   useEffect(() => {
-    const handleSessionUpdated = () => {
+    const handleUpdate = () => {
       queryClient.invalidateQueries({ queryKey: ['cashier-sessions'] });
+      queryClient.invalidateQueries({ queryKey: ['tables'] });
     };
 
-    socket.on('session:updated', handleSessionUpdated);
-    socket.on('order:status_changed', handleSessionUpdated);
-    socket.on('order:created', handleSessionUpdated);
+    socket.on('session:updated', handleUpdate);
+    socket.on('order:status_changed', handleUpdate);
+    socket.on('order:created', handleUpdate);
 
     return () => {
-      socket.off('session:updated', handleSessionUpdated);
-      socket.off('order:status_changed', handleSessionUpdated);
-      socket.off('order:created', handleSessionUpdated);
+      socket.off('session:updated', handleUpdate);
+      socket.off('order:status_changed', handleUpdate);
+      socket.off('order:created', handleUpdate);
     };
   }, [queryClient]);
 
