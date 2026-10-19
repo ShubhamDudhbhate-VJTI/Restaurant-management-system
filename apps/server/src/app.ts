@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
+import { rateLimit } from 'express-rate-limit';
 import { config } from './config';
 import { errorHandler } from './middleware/error';
 import { authRouter } from './modules/auth/routes';
@@ -19,6 +20,15 @@ import { inventoryRouter } from './modules/inventory/routes';
 
 export const app = express();
 
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 100,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  skip: (req) => process.env.NODE_ENV === 'test',
+});
+
+app.use(limiter);
 
 const allowedOrigins = [
   ...(config.CLIENT_ORIGIN ? config.CLIENT_ORIGIN.split(',').map(o => o.trim()) : []),
