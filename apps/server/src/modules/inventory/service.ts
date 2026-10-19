@@ -1,7 +1,7 @@
 import { inventoryRepository } from './repository';
 import { recordAudit } from '../audit/service';
 import { AppError } from '../../middleware/error';
-import { io } from '../../index';
+import { getIO } from '../../socket';
 import {
   type CreateInventoryInput,
   type UpdateInventoryInput,
@@ -11,7 +11,7 @@ import {
 
 export class InventoryService {
   private emitUpdate() {
-    io.emit(SocketEvents.INVENTORY_UPDATED);
+    getIO().emit(SocketEvents.INVENTORY_UPDATED);
   }
 
   async getAllItems() {
