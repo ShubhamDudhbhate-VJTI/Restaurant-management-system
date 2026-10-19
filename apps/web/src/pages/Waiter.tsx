@@ -4,6 +4,7 @@ import { apiClient } from '../api/client';
 import { useMenu } from '../hooks/useMenu';
 import { useCashierSessions } from '../hooks/useCashierSessions';
 import { useTables } from '../hooks/useTables';
+import { useToast } from '../components/ui/toast';
 import { OrderStatus, OrderWithItems, TableStatus } from '@/contracts';
 import {
   Plus,
@@ -32,6 +33,7 @@ import { cn } from '../lib/utils';
 import { ScrollArea } from '../components/ui/scroll-area';
 
 export default function WaiterPage() {
+  const { toast } = useToast();
   const queryClient = useQueryClient();
   const [filter, setFilter] = useState<'all' | 'occupied' | 'billing'>('all');
   const [selectedTableId, setSelectedTableId] = useState<string | null>(null);
@@ -101,10 +103,14 @@ export default function WaiterPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cashier-sessions'] });
+      toast('Order sent to kitchen successfully', 'success');
       setSelectedItemId('');
       setQuantity(1);
       setNotes('');
       setViewMode('summary');
+    },
+    onError: (error: any) => {
+      toast(error.message || 'Failed to create order', 'error');
     }
   });
 

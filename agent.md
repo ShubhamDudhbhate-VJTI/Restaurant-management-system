@@ -23,8 +23,8 @@ These files are the source of truth and have been updated together.
 ## Hard rules
 
 - Stay in scope.
-- The MVP does NOT include inventory, AI recommendations or queue/waiting-list management.
-- Reservations are included.
+- The MVP includes the custom **Inventory Management** system (stock levels, units, and ingredient mappings) and Reservations.
+- AI recommendations and queue/waiting-list management remain out of scope.
 - Waiter ordering is included.
 - Customer self-ordering is included.
 - Feedback and basic reports are included.
